@@ -421,6 +421,25 @@ body.be-studio-open #be-studio-outline { display: block; }
   gap: 8px;
   margin: 0 0 12px;
 }
+#be-studio-panel .be-font-search {
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 11px 12px;
+  border: 1px solid #d5c6b4;
+  background: #fff;
+  color: #1d2d47;
+  font-size: 14px;
+}
+#be-studio-panel .be-font-select {
+  width: 100%;
+  min-height: 180px;
+  padding: 6px;
+  border: 1px solid #d5c6b4;
+  background: #fff;
+  color: #1d2d47;
+  font-size: 15px;
+  line-height: 1.5;
+}
 body.be-studio-picking *,
 body.be-studio-open *:not(#be-studio-panel):not(#be-studio-panel *):not(#be-studio-launch):not(#be-studio-note):not(#be-size-handle) {
   cursor: crosshair !important;

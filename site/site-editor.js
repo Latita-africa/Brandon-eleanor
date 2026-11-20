@@ -8,25 +8,171 @@
   const CSS_PROPS = new Set([
     'font-size','font-family','font-weight','font-style','line-height','letter-spacing','text-align','text-transform',
     'color','background-color','background-image','background-size','background-position','background-repeat',
-    'padding','margin','width','max-width','height','min-height','border','border-radius','box-shadow','opacity',
-    'display','object-fit','object-position'
+    'padding','margin','margin-left','margin-right','width','max-width','height','min-height','border','border-radius',
+    'box-shadow','opacity','display','object-fit','object-position','transform'
   ]);
+  const SYSTEM_FONTS = new Set(['Georgia', 'Arial', 'Times New Roman', 'serif', 'sans-serif', 'cursive', 'monospace', 'Keep original']);
+  const FONT_CHOICES = [
+    // Elegant serifs
+    ['Cormorant Garamond', 'serif'], ['Cormorant', 'serif'], ['Cormorant Infant', 'serif'],
+    ['Playfair Display', 'serif'], ['Playfair Display SC', 'serif'],
+    ['Bodoni Moda', 'serif'], ['Italiana', 'serif'], ['Prata', 'serif'],
+    ['EB Garamond', 'serif'], ['Libre Baskerville', 'serif'], ['Libre Caslon Text', 'serif'],
+    ['Cinzel', 'serif'], ['Cinzel Decorative', 'serif'], ['Sorts Mill Goudy', 'serif'],
+    ['Spectral', 'serif'], ['Lora', 'serif'], ['Merriweather', 'serif'], ['Merriweather Sans', 'sans-serif'],
+    ['Cardo', 'serif'], ['Josefin Slab', 'serif'], ['Marcellus', 'serif'], ['Marcellus SC', 'serif'],
+    ['Oranienbaum', 'serif'], ['Unna', 'serif'], ['Tinos', 'serif'], ['Instrument Serif', 'serif'],
+    ['DM Serif Display', 'serif'], ['DM Serif Text', 'serif'], ['Noto Serif', 'serif'],
+    ['Noto Serif Display', 'serif'], ['Source Serif 4', 'serif'], ['Bitter', 'serif'],
+    ['Crimson Text', 'serif'], ['Crimson Pro', 'serif'], ['Libre Caslon Display', 'serif'],
+    ['Old Standard TT', 'serif'], ['PT Serif', 'serif'], ['PT Serif Caption', 'serif'],
+    ['Roboto Serif', 'serif'], ['Rozha One', 'serif'], ['Rufina', 'serif'], ['Sanchez', 'serif'],
+    ['Sawarabi Mincho', 'serif'], ['Spectral SC', 'serif'], ['Stix Two Text', 'serif'],
+    ['Ultra', 'serif'], ['Vidaloka', 'serif'], ['Vollkorn', 'serif'], ['Yrsa', 'serif'],
+    ['Zilla Slab', 'serif'], ['Alegreya', 'serif'], ['Alegreya SC', 'serif'], ['Amiri', 'serif'],
+    ['Andada Pro', 'serif'], ['Anton', 'sans-serif'], ['Arapey', 'serif'], ['Arvo', 'serif'],
+    ['Bellefair', 'serif'], ['Benne', 'serif'], ['Bentham', 'serif'], ['Besley', 'serif'],
+    ['BioRhyme', 'serif'], ['Bodoni Moda SC', 'serif'], ['Bona Nova', 'serif'],
+    ['Brawler', 'serif'], ['Bree Serif', 'serif'],
+    ['Caladea', 'serif'], ['Cambo', 'serif'], ['Cantata One', 'serif'], ['Caudex', 'serif'],
+    ['Ceviche One', 'display'], ['Chakra Petch', 'sans-serif'], ['Charm', 'cursive'],
+    ['Charmonman', 'cursive'], ['Copse', 'serif'], ['Cormorant SC', 'serif'],
+    ['Cormorant Unicase', 'serif'], ['Cormorant Upright', 'serif'], ['Coustard', 'serif'],
+    ['Crete Round', 'serif'], ['Cutive', 'serif'], ['Cutive Mono', 'monospace'],
+    ['David Libre', 'serif'], ['Domine', 'serif'], ['Donegal One', 'serif'],
+    ['Dosis', 'sans-serif'], ['Eczar', 'serif'], ['Enriqueta', 'serif'],
+    ['Fauna One', 'serif'], ['Fenix', 'serif'], ['Fjord One', 'serif'],
+    ['Frank Ruhl Libre', 'serif'], ['Fraunces', 'serif'], ['Gabriela', 'serif'],
+    ['Gelasio', 'serif'], ['Gentium Book Plus', 'serif'], ['Gentium Plus', 'serif'],
+    ['Gilda Display', 'serif'], ['Glegoo', 'serif'], ['Goudy Bookletter 1911', 'serif'],
+    ['Graduate', 'serif'], ['Grand Hotel', 'cursive'], ['Grenze', 'serif'],
+    ['Gupter', 'serif'], ['Habibi', 'serif'], ['Halant', 'serif'], ['Headland One', 'serif'],
+    ['Heebo', 'sans-serif'], ['Hind', 'sans-serif'], ['Holtwood One SC', 'serif'],
+    ['IBM Plex Serif', 'serif'], ['Imbue', 'serif'], ['Inika', 'serif'],
+    ['Inknut Antiqua', 'serif'], ['Irish Grover', 'display'], ['Istok Web', 'sans-serif'],
+    ['Jacques Francois', 'serif'], ['Jomolhari', 'serif'], ['Judson', 'serif'],
+    ['Junge', 'serif'], ['Jura', 'sans-serif'], ['Kameron', 'serif'], ['Karma', 'serif'],
+    ['Kaushan Script', 'cursive'], ['Kelly Slab', 'display'], ['Khand', 'sans-serif'],
+    ['Khula', 'sans-serif'], ['Kokoro', 'serif'], ['Kurale', 'serif'], ['Laila', 'serif'],
+    ['Linden Hill', 'serif'], ['Lusitana', 'serif'], ['Lustria', 'serif'],
+    ['Ma Shan Zheng', 'cursive'], ['Magra', 'sans-serif'], ['Maiden Orange', 'display'],
+    ['Maitree', 'serif'], ['Markazi Text', 'serif'], ['Mate', 'serif'], ['Mate SC', 'serif'],
+    ['Maven Pro', 'sans-serif'], ['McLaren', 'display'], ['MedievalSharp', 'display'],
+    ['Medula One', 'display'], ['Megrim', 'display'], ['Merienda', 'cursive'],
+    ['Metamorphous', 'display'], ['Milonga', 'display'], ['Modern Antiqua', 'serif'],
+    ['Montaga', 'serif'], ['MonteCarlo', 'cursive'], ['Montserrat Alternates', 'sans-serif'],
+    ['Mr De Haviland', 'cursive'], ['Mrs Sheppards', 'cursive'], ['Neuton', 'serif'],
+    ['Newsreader', 'serif'], ['Niconne', 'cursive'], ['Noticia Text', 'serif'],
+    ['Noto Serif JP', 'serif'], ['Noto Serif KR', 'serif'], ['Noto Serif SC', 'serif'],
+    ['Noto Serif TC', 'serif'], ['Ovo', 'serif'], ['Petrona', 'serif'],
+    ['Piazzolla', 'serif'], ['Podkova', 'serif'], ['Poly', 'serif'], ['Port Lligat Slab', 'serif'],
+    ['Prociono', 'serif'], ['Quando', 'serif'], ['Quattrocento', 'serif'],
+    ['Radley', 'serif'], ['Ramaraja', 'serif'], ['Rasa', 'serif'], ['Rhodium Libre', 'serif'],
+    ['Roboto Slab', 'serif'], ['Rokkitt', 'serif'], ['Rosarivo', 'serif'],
+    ['Scope One', 'serif'], ['Slabo 13px', 'serif'], ['Slabo 27px', 'serif'],
+    ['Solway', 'serif'], ['Song Myung', 'serif'], ['Stardos Stencil', 'display'],
+    ['Suez One', 'serif'], ['Sumana', 'serif'], ['Sura', 'serif'], ['Suranna', 'serif'],
+    ['Taviraj', 'serif'], ['Texturina', 'serif'], ['Trirong', 'serif'], ['Trykker', 'serif'],
+    ['Vesper Libre', 'serif'], ['Volkhov', 'serif'], ['Young Serif', 'serif'],
+    // Scripts & calligraphy
+    ['Great Vibes', 'cursive'], ['Pinyon Script', 'cursive'], ['Allura', 'cursive'],
+    ['Alex Brush', 'cursive'], ['Sacramento', 'cursive'], ['Tangerine', 'cursive'],
+    ['Parisienne', 'cursive'], ['Dancing Script', 'cursive'], ['Italianno', 'cursive'],
+    ['Mrs Saint Delafield', 'cursive'], ['Rouge Script', 'cursive'], ['Satisfy', 'cursive'],
+    ['Cookie', 'cursive'], ['Imperial Script', 'cursive'], ['Pacifico', 'cursive'],
+    ['Yellowtail', 'cursive'], ['Lobster', 'cursive'], ['Lobster Two', 'cursive'],
+    ['Caveat', 'cursive'], ['Caveat Brush', 'cursive'], ['Homemade Apple', 'cursive'],
+    ['Indie Flower', 'cursive'], ['Shadows Into Light', 'cursive'], ['Shadows Into Light Two', 'cursive'],
+    ['Amatic SC', 'cursive'], ['Covered By Your Grace', 'cursive'], ['Damion', 'cursive'],
+    ['Euphoria Script', 'cursive'], ['Felipa', 'cursive'], ['Fondamento', 'cursive'],
+    ['Give You Glory', 'cursive'], ['Gloria Hallelujah', 'cursive'], ['Gochi Hand', 'cursive'],
+    ['Handlee', 'cursive'], ['Herr Von Muellerhoff', 'cursive'], ['Hurricane', 'cursive'],
+    ['Inspiration', 'cursive'], ['Island Moments', 'cursive'], ['Jim Nightshade', 'cursive'],
+    ['Julee', 'cursive'], ['Just Another Hand', 'cursive'], ['Kalam', 'cursive'],
+    ['Kristi', 'cursive'], ['La Belle Aurore', 'cursive'], ['League Script', 'cursive'],
+    ['Loved by the King', 'cursive'], ['Lovers Quarrel', 'cursive'], ['Marck Script', 'cursive'],
+    ['Meddon', 'cursive'], ['Meie Script', 'cursive'], ['Miss Fajardose', 'cursive'],
+    ['Monsieur La Doulaise', 'cursive'], ['Mr Bedfort', 'cursive'], ['Mr Dafoe', 'cursive'],
+    ['Mrs Sheppards', 'cursive'], ['Neucha', 'cursive'], ['Norican', 'cursive'],
+    ['Nothing You Could Do', 'cursive'], ['Over the Rainbow', 'cursive'],
+    ['Permanent Marker', 'cursive'], ['Petit Formal Script', 'cursive'],
+    ['Princess Sofia', 'cursive'], ['Quintessential', 'cursive'], ['Qwigley', 'cursive'],
+    ['Rancho', 'cursive'], ['Reenie Beanie', 'cursive'], ['Rochester', 'cursive'],
+    ['Rock Salt', 'cursive'], ['Romanesco', 'cursive'], ['Rouge Script', 'cursive'],
+    ['Ruthie', 'cursive'], ['Sail', 'cursive'], ['Sansita', 'sans-serif'],
+    ['Sarina', 'cursive'], ['Seaweed Script', 'cursive'], ['Send Flowers', 'cursive'],
+    ['Sevillana', 'cursive'], ['Seymour One', 'sans-serif'], ['Shadow', 'display'],
+    ['Sofia', 'cursive'], ['Square Peg', 'cursive'], ['Stalemate', 'cursive'],
+    ['Style Script', 'cursive'], ['Sunshiney', 'cursive'], ['Swanky and Moo Moo', 'cursive'],
+    ['The Girl Next Door', 'cursive'], ['Vibur', 'cursive'], ['Waiting for the Sunrise', 'cursive'],
+    ['Walter Turncoat', 'cursive'], ['Whisper', 'cursive'], ['Yesteryear', 'cursive'],
+    ['Zeyada', 'cursive'], ['Bad Script', 'cursive'], ['Berkshire Swash', 'cursive'],
+    ['Bilbo', 'cursive'], ['Bilbo Swash Caps', 'cursive'], ['Bonbon', 'cursive'],
+    ['Calligraffitti', 'cursive'], ['Carattere', 'cursive'], ['Cedarville Cursive', 'cursive'],
+    ['Clicker Script', 'cursive'], ['Coming Soon', 'cursive'], ['Condiment', 'cursive'],
+    ['Corinthia', 'cursive'], ['Courgette', 'cursive'], ['Crafty Girls', 'cursive'],
+    ['Devonshire', 'cursive'], ['Dr Sugiyama', 'cursive'], ['Eagle Lake', 'cursive'],
+    ['Engagement', 'cursive'], ['Ephesis', 'cursive'], ['Esteban', 'serif'],
+    ['Explora', 'cursive'], ['Festive', 'cursive'], ['Freehand', 'cursive'],
+    ['Galada', 'cursive'], ['Grape Nuts', 'cursive'], ['Grechen Fuemen', 'cursive'],
+    ['Grey Qo', 'cursive'], ['Griffy', 'display'], ['Habibi', 'serif'],
+    // Clean sans
+    ['DM Sans', 'sans-serif'], ['Montserrat', 'sans-serif'], ['Manrope', 'sans-serif'],
+    ['Josefin Sans', 'sans-serif'], ['Raleway', 'sans-serif'], ['Poppins', 'sans-serif'],
+    ['Nunito', 'sans-serif'], ['Nunito Sans', 'sans-serif'], ['Outfit', 'sans-serif'],
+    ['Inter', 'sans-serif'], ['Quicksand', 'sans-serif'], ['Work Sans', 'sans-serif'],
+    ['Figtree', 'sans-serif'], ['Plus Jakarta Sans', 'sans-serif'], ['Space Grotesk', 'sans-serif'],
+    ['Syne', 'sans-serif'], ['Urbanist', 'sans-serif'], ['Mulish', 'sans-serif'],
+    ['Karla', 'sans-serif'], ['Barlow', 'sans-serif'], ['Barlow Condensed', 'sans-serif'],
+    ['Barlow Semi Condensed', 'sans-serif'], ['Cabin', 'sans-serif'], ['Cairo', 'sans-serif'],
+    ['Catamaran', 'sans-serif'], ['Chivo', 'sans-serif'], ['Comfortaa', 'sans-serif'],
+    ['Commissioner', 'sans-serif'], ['Encode Sans', 'sans-serif'], ['Exo 2', 'sans-serif'],
+    ['Figtree', 'sans-serif'], ['Fira Sans', 'sans-serif'], ['Fjalla One', 'sans-serif'],
+    ['Fredoka', 'sans-serif'], ['Gayathri', 'sans-serif'], ['Gemunu Libre', 'sans-serif'],
+    ['Genos', 'sans-serif'], ['Geologica', 'sans-serif'],
+    ['Golos Text', 'sans-serif'], ['Gotu', 'sans-serif'], ['Gudea', 'sans-serif'],
+    ['Hanken Grotesk', 'sans-serif'], ['Harmattan', 'sans-serif'], ['Hind Madurai', 'sans-serif'],
+    ['IBM Plex Sans', 'sans-serif'], ['Inconsolata', 'monospace'], ['Instrument Sans', 'sans-serif'],
+    ['Jost', 'sans-serif'], ['Kanit', 'sans-serif'], ['Kumbh Sans', 'sans-serif'],
+    ['Lato', 'sans-serif'], ['League Spartan', 'sans-serif'], ['Lexend', 'sans-serif'],
+    ['Libre Franklin', 'sans-serif'], ['Literata', 'serif'], ['Livvic', 'sans-serif'],
+    ['M PLUS 1', 'sans-serif'], ['M PLUS Rounded 1c', 'sans-serif'], ['Manuale', 'serif'],
+    ['Martel', 'serif'], ['Martel Sans', 'sans-serif'],
+    ['Mukta', 'sans-serif'], ['Noto Sans', 'sans-serif'], ['Noto Sans Display', 'sans-serif'],
+    ['Nunito', 'sans-serif'], ['Onest', 'sans-serif'], ['Open Sans', 'sans-serif'],
+    ['Oswald', 'sans-serif'], ['Overpass', 'sans-serif'], ['Oxygen', 'sans-serif'],
+    ['PT Sans', 'sans-serif'], ['PT Sans Narrow', 'sans-serif'], ['Public Sans', 'sans-serif'],
+    ['Puritan', 'sans-serif'], ['Rajdhani', 'sans-serif'], ['Readex Pro', 'sans-serif'],
+    ['Red Hat Display', 'sans-serif'], ['Red Hat Text', 'sans-serif'], ['Roboto', 'sans-serif'],
+    ['Roboto Condensed', 'sans-serif'], ['Roboto Flex', 'sans-serif'], ['Roboto Mono', 'monospace'],
+    ['Rubik', 'sans-serif'], ['Saira', 'sans-serif'], ['Sarabun', 'sans-serif'],
+    ['Sora', 'sans-serif'], ['Source Sans 3', 'sans-serif'], ['Space Mono', 'monospace'],
+    ['Spline Sans', 'sans-serif'], ['Tajawal', 'sans-serif'], ['Telex', 'sans-serif'],
+    ['Tenor Sans', 'sans-serif'], ['Titillium Web', 'sans-serif'], ['Ubuntu', 'sans-serif'],
+    ['Varela Round', 'sans-serif'], ['Wix Madefor Display', 'sans-serif'], ['Wix Madefor Text', 'sans-serif'],
+    ['Yanone Kaffeesatz', 'sans-serif'], ['Yantramanav', 'sans-serif'],
+    // Display / statement
+    ['Abril Fatface', 'display'], ['Alfa Slab One', 'display'], ['Bangers', 'display'],
+    ['Bebas Neue', 'sans-serif'], ['Big Shoulders Display', 'display'], ['Bungee', 'display'],
+    ['Carter One', 'display'], ['Concert One', 'display'],
+    ['Contrail One', 'display'], ['Creepster', 'display'], ['Dela Gothic One', 'display'],
+    ['Fugaz One', 'display'], ['Lilita One', 'display'], ['Luckiest Guy', 'display'],
+    ['Monoton', 'display'], ['Passion One', 'display'], ['Patua One', 'display'],
+    ['Paytone One', 'sans-serif'], ['Poiret One', 'display'], ['Righteous', 'display'],
+    ['Rowdies', 'display'], ['Russo One', 'sans-serif'], ['Special Elite', 'display'],
+    ['Titan One', 'display'], ['UnifrakturMaguntia', 'display'], ['Vast Shadow', 'display']
+  ].filter((row, index, all) => all.findIndex(r => r[0] === row[0]) === index);
   const SIMPLE_FONTS = [
-    ['','Keep original'],
-    ['"Cormorant Garamond", Georgia, serif','Cormorant Garamond'],
-    ['"Playfair Display", Georgia, serif','Playfair Display'],
-    ['"Bodoni Moda", Georgia, serif','Bodoni Moda'],
-    ['"Great Vibes", cursive','Great Vibes (script)'],
-    ['"Pinyon Script", cursive','Pinyon Script'],
-    ['"DM Sans", Arial, sans-serif','DM Sans'],
-    ['"Montserrat", Arial, sans-serif','Montserrat'],
-    ['Georgia, serif','Georgia'],
-    ['Arial, sans-serif','Arial']
+    ['', 'Keep original'],
+    ...FONT_CHOICES.map(([name, fallback]) => {
+      const stack = fallback === 'display' ? 'serif' : fallback;
+      return ['"' + name + '", ' + stack, name];
+    }),
+    ['Georgia, serif', 'Georgia'],
+    ['"Times New Roman", Times, serif', 'Times New Roman'],
+    ['Arial, sans-serif', 'Arial']
   ];
-  const GOOGLE_FONTS = new Set([
-    'Cormorant Garamond','Playfair Display','Bodoni Moda','Great Vibes','Pinyon Script',
-    'DM Sans','Montserrat','Italiana','Prata','EB Garamond','Libre Baskerville','Manrope'
-  ]);
+  const GOOGLE_FONTS = new Set(FONT_CHOICES.map(([name]) => name));
   const THEME = [
     ['navy','Blue','--wine','#111c38'],
     ['gold','Gold','--gold','#c5a16a'],
@@ -144,8 +290,19 @@
   function mediaRule(scope) {
     return scope === 'mobile' ? '@media (max-width: 699px)' : scope === 'tablet' ? '@media (min-width: 700px) and (max-width: 1099px)' : '';
   }
+  function loadGoogleFont(name) {
+    const clean = String(name || '').trim().replace(/^['"]|['"]$/g, '');
+    if (!clean || SYSTEM_FONTS.has(clean)) return;
+    GOOGLE_FONTS.add(clean);
+    const id = 'be-web-font-' + clean.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    if (document.getElementById(id)) return;
+    const link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(clean).replace(/%20/g, '+') + ':ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap';
+    document.head.appendChild(link);
+  }
   function ensureWebFonts() {
-    const used = new Set();
     for (const page of Object.values(state.visualOverrides || {})) {
       if (!page || typeof page !== 'object') continue;
       for (const rec of Object.values(page)) {
@@ -153,18 +310,45 @@
           const val = rec?.[scope]?.['font-family'];
           if (typeof val !== 'string') continue;
           const first = val.split(',')[0].trim().replace(/^['"]|['"]$/g, '');
-          if (GOOGLE_FONTS.has(first)) used.add(first);
+          if (first && !SYSTEM_FONTS.has(first)) loadGoogleFont(first);
         }
       }
     }
-    for (const name of used) {
-      const id = 'be-web-font-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      if (document.getElementById(id)) continue;
-      const link = document.createElement('link');
-      link.id = id; link.rel = 'stylesheet';
-      link.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(name).replace(/%20/g, '+') + '&display=swap';
-      document.head.appendChild(link);
+  }
+  function parseTranslateX(value) {
+    const match = String(value || '').match(/translateX\(\s*(-?\d+(?:\.\d+)?)px\s*\)/i);
+    return match ? Number(match[1]) : 0;
+  }
+  function currentLetterSpacing(el) {
+    const stored = editingRecord(targetKey)?.[activeScope]?.['letter-spacing'];
+    if (stored != null && stored !== '') {
+      const n = parseFloat(stored);
+      if (!Number.isNaN(n)) return n;
     }
+    const computed = parseFloat(getComputedStyle(el || target).letterSpacing);
+    return Number.isFinite(computed) ? Math.round(computed * 10) / 10 : 0;
+  }
+  function applyLetterSpacing(px, { recordHistory = false } = {}) {
+    if (!target || !targetKey) return;
+    const size = Math.round(Math.min(40, Math.max(-5, px)) * 10) / 10;
+    if (recordHistory) history();
+    setValue(targetKey, 'letter-spacing', String(size));
+    const label = $('be-letter-label');
+    if (label) label.textContent = size + 'px';
+    const range = $('be-letter-range');
+    if (range) range.value = String(size);
+    return size;
+  }
+  function applyTextShift(deltaPx) {
+    if (!target || !targetKey) return;
+    history();
+    const curr = editingRecord(targetKey)[activeScope] || {};
+    const next = Math.round(Math.min(240, Math.max(-240, parseTranslateX(curr.transform) + deltaPx)));
+    if (next === 0) setValue(targetKey, 'transform', '');
+    else setValue(targetKey, 'transform', 'translateX(' + next + 'px)');
+    const label = $('be-shift-label');
+    if (label) label.textContent = (next === 0 ? 'Centre line' : (next > 0 ? 'Right ' + next + 'px' : 'Left ' + Math.abs(next) + 'px'));
+    notify(next === 0 ? 'Back to centre ✓' : (next > 0 ? 'Moved right ✓' : 'Moved left ✓'));
   }
   function themeSheet() {
     const theme = {...(state.designTheme || {}), ...(state.visualTheme || {})};
@@ -470,11 +654,111 @@
 
   function lookEditor(root) {
     const curr = editingRecord(targetKey)[activeScope] || {};
-    root.append(help('Drag the gold corner on the page to resize. Or use the buttons below.'));
-    field(root, 'Font style', {
-      type: 'select', full: true, value: curr['font-family'] || '', options: SIMPLE_FONTS,
-      onChange: v => { history(); setValue(targetKey, 'font-family', v); }
+    root.append(help('Drag the gold corner to resize. Use the buttons to move text, space letters, or change the font.'));
+
+    const fontWrap = document.createElement('div');
+    fontWrap.className = 'be-field be-full';
+    fontWrap.innerHTML = '<label>Font style (' + FONT_CHOICES.length + '+ fonts)</label>';
+    const fontSearch = document.createElement('input');
+    fontSearch.type = 'search';
+    fontSearch.placeholder = 'Search fonts… e.g. vibes, playfair, script';
+    fontSearch.className = 'be-font-search';
+    const fontSelect = document.createElement('select');
+    fontSelect.className = 'be-font-select';
+    fontSelect.size = 8;
+    const fillFonts = (query = '') => {
+      const q = String(query || '').trim().toLowerCase();
+      fontSelect.replaceChildren();
+      const keep = document.createElement('option');
+      keep.value = '';
+      keep.textContent = 'Keep original';
+      fontSelect.append(keep);
+      for (const [value, label] of SIMPLE_FONTS) {
+        if (!value) continue;
+        if (q && !label.toLowerCase().includes(q) && !value.toLowerCase().includes(q)) continue;
+        const opt = document.createElement('option');
+        opt.value = value;
+        opt.textContent = label;
+        opt.style.fontFamily = value;
+        fontSelect.append(opt);
+      }
+      if (curr['font-family']) fontSelect.value = curr['font-family'];
+    };
+    fillFonts();
+    fontSearch.addEventListener('input', () => fillFonts(fontSearch.value));
+    fontSelect.addEventListener('change', () => {
+      const v = fontSelect.value;
+      history();
+      const name = String(v || '').split(',')[0].trim().replace(/^['"]|['"]$/g, '');
+      if (name) loadGoogleFont(name);
+      setValue(targetKey, 'font-family', v);
+      notify(name ? ('Font: ' + name + ' ✓') : 'Original font ✓');
     });
+    fontWrap.append(fontSearch, fontSelect);
+    root.append(fontWrap);
+
+    const customFont = document.createElement('div');
+    customFont.className = 'be-field be-full';
+    customFont.innerHTML = '<label>Or type any Google Font name</label>';
+    const customRow = document.createElement('div');
+    customRow.className = 'be-size-row';
+    const customInput = document.createElement('input');
+    customInput.type = 'text';
+    customInput.placeholder = 'e.g. Parisienne, Cinzel, Lobster';
+    customInput.value = '';
+    const customBtn = document.createElement('button');
+    customBtn.type = 'button';
+    customBtn.textContent = 'Use font';
+    customBtn.className = 'be-choice';
+    customBtn.addEventListener('click', () => {
+      const name = customInput.value.trim().replace(/[<>;{}]/g, '');
+      if (!name || name.length > 60) {
+        notify('Type a Google Font name, like Great Vibes.');
+        return;
+      }
+      history();
+      loadGoogleFont(name);
+      const fallback = /script|vibes|allura|brush|sacramento|tangerine|parisienne|italianno|cookie|satisfy|delafield|rouge|imperial|lobster|pacifico|yellowtail|caveat/i.test(name)
+        ? 'cursive'
+        : 'serif';
+      setValue(targetKey, 'font-family', '"' + name + '", ' + fallback);
+      notify('Font set to ' + name + ' ✓');
+      renderPanel();
+    });
+    customRow.append(customInput, customBtn);
+    customFont.append(customRow);
+    root.append(customFont);
+    root.append(help('Hundreds of free Google Fonts included. Search above, or type any Google Font name.'));
+
+    const align = document.createElement('div');
+    align.className = 'be-size-nudge';
+    root.append(align);
+    btn(align, '⬅ Left', () => { history(); setValue(targetKey, 'text-align', 'left'); notify('Aligned left ✓'); }, 'be-choice');
+    btn(align, 'Center', () => { history(); setValue(targetKey, 'text-align', 'center'); notify('Centered ✓'); }, 'be-choice');
+    btn(align, 'Right ➡', () => { history(); setValue(targetKey, 'text-align', 'right'); notify('Aligned right ✓'); }, 'be-choice');
+
+    const shift = document.createElement('div');
+    shift.className = 'be-field be-full';
+    shift.innerHTML = '<label>Move the words</label>';
+    const shiftRow = document.createElement('div');
+    shiftRow.className = 'be-size-nudge';
+    btn(shiftRow, '← Move left', () => applyTextShift(-16), 'be-choice');
+    btn(shiftRow, 'Move right →', () => applyTextShift(16), 'be-choice');
+    shift.append(shiftRow);
+    const shiftLabel = document.createElement('strong');
+    shiftLabel.id = 'be-shift-label';
+    const shiftNow = parseTranslateX(curr.transform);
+    shiftLabel.textContent = shiftNow === 0 ? 'Centre line' : (shiftNow > 0 ? 'Right ' + shiftNow + 'px' : 'Left ' + Math.abs(shiftNow) + 'px');
+    shiftLabel.style.display = 'block';
+    shiftLabel.style.marginTop = '8px';
+    shift.append(shiftLabel);
+    btn(shift, 'Reset position', () => {
+      history();
+      setValue(targetKey, 'transform', '');
+      shiftLabel.textContent = 'Centre line';
+      notify('Position reset ✓');
+    }, 'be-warn be-full');
+    root.append(shift);
 
     const nudge = document.createElement('div');
     nudge.className = 'be-size-nudge';
@@ -504,6 +788,36 @@
     sizeRow.append(sizeRange, sizeLabel);
     sizeWrap.append(sizeRow);
     root.append(sizeWrap);
+
+    const spaceNudge = document.createElement('div');
+    spaceNudge.className = 'be-size-nudge';
+    root.append(spaceNudge);
+    btn(spaceNudge, 'Tighter letters', () => applyLetterSpacing(currentLetterSpacing(target) - 0.5, { recordHistory: true }), 'be-choice');
+    btn(spaceNudge, 'Wider letters', () => applyLetterSpacing(currentLetterSpacing(target) + 0.5, { recordHistory: true }), 'be-choice');
+
+    const letterWrap = document.createElement('div');
+    letterWrap.className = 'be-field be-full';
+    letterWrap.innerHTML = '<label>Letter spacing</label>';
+    const letterRow = document.createElement('div');
+    letterRow.className = 'be-size-row';
+    const letterRange = document.createElement('input');
+    letterRange.type = 'range';
+    letterRange.id = 'be-letter-range';
+    letterRange.min = '-5';
+    letterRange.max = '40';
+    letterRange.step = '0.5';
+    const letterNow = currentLetterSpacing(target);
+    letterRange.value = String(Math.min(40, Math.max(-5, letterNow)));
+    const letterLabel = document.createElement('strong');
+    letterLabel.id = 'be-letter-label';
+    letterLabel.textContent = letterRange.value + 'px';
+    letterRange.addEventListener('input', () => {
+      applyLetterSpacing(Number(letterRange.value), { recordHistory: true });
+    });
+    letterRow.append(letterRange, letterLabel);
+    letterWrap.append(letterRow);
+    root.append(letterWrap);
+
     colorField(root, 'Colour of the words', 'color', curr);
   }
 
