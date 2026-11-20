@@ -196,14 +196,14 @@
   let target = null, targetKey = '', picking = false, activeTab = 'words', activeScope = 'desktop';
   let panel, outline, hoverOutline, sizeHandle, moveHandle, contentRoot, undo = [], redo = [], noteTimer = 0;
   let saving = false;
-  let sizeDrag = null;
-  let moveDrag = null;
+  let gesture = null; // { kind:'move'|'resize', pointerId, ... }
+  let suppressClickUntil = 0;
   const $ = id => document.getElementById(id);
   const escapeSelector = s => (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
   const recordMap = () => (state.visualOverrides[PAGE] ||= {});
   const editingRecord = key => (recordMap()[key] ||= { desktop: {}, mobile: {}, tablet: {} });
   const sectionHost = () => document.querySelector(PAGE === 'index' ? 'main' : 'main.hero');
-  const inEditor = node => !!node?.closest?.('#be-studio-panel,#be-studio-launch,#be-studio-note,#be-size-handle,#be-move-handle,#be-saving-veil,#editor,#backdrop,#editButton');
+  const inEditor = node => !!node?.closest?.('#be-studio-panel,#be-studio-launch,#be-studio-note,#be-size-handle,#be-move-handle,#be-studio-outline,#be-saving-veil,#editor,#backdrop,#editButton');
   const belongsToPage = el => !!el?.closest?.('body > header,body > main,body > footer') && !inEditor(el);
   const NODE_SKIP = 'script,style,link,meta,noscript,template,svg,path,source,iframe,canvas';
 
@@ -269,7 +269,7 @@
     saveDraft(); refreshVisual(); renderPanel();
   }
 
-  function setValue(key, field, value, mode = activeScope) {
+  function setValue(key, field, value, mode = activeScope, { refresh = true, draft = true } = {}) {
     if (!key) return;
     const rec = editingRecord(key);
     if (field === 'text' || field === 'src' || field === 'href' || field === 'alt') rec[field] = value;
@@ -280,7 +280,8 @@
       if (value === '' || value == null) delete group[field];
       else group[field] = String(value);
     }
-    saveDraft(); refreshVisual();
+    if (draft) saveDraft();
+    if (refresh) refreshVisual();
   }
   function cssSafe(value, prop) {
     const s = String(value ?? '').trim();
@@ -334,9 +335,19 @@
     const curr = editingRecord(targetKey)?.[activeScope] || {};
     return parseTranslate(curr.transform || (target && target.style.transform) || '');
   }
+  function syncMoveLabel(pos) {
+    const label = $('be-shift-label');
+    if (label) {
+      label.textContent = (!pos.x && !pos.y)
+        ? 'In place'
+        : ('X ' + pos.x + 'px · Y ' + pos.y + 'px');
+    }
+    if (moveHandle) moveHandle.dataset.pos = (!pos.x && !pos.y) ? 'drag me' : (pos.x + ',' + pos.y);
+  }
   function setTransformPosition(x, y, { commit = false, recordHistory = false } = {}) {
-    if (!target || !targetKey) return currentTranslate();
+    if (!target || !targetKey) return { x: 0, y: 0 };
     const value = formatTranslate(x, y);
+    const pos = parseTranslate(value);
     if (recordHistory) history();
     if (commit) {
       target.style.removeProperty('transform');
@@ -345,15 +356,26 @@
       target.style.setProperty('transform', value || 'none', 'important');
       updateOutline();
     }
-    const label = $('be-shift-label');
-    if (label) {
-      const pos = parseTranslate(value);
-      label.textContent = (!pos.x && !pos.y)
-        ? 'In place'
-        : ('X ' + pos.x + 'px · Y ' + pos.y + 'px');
+    syncMoveLabel(pos);
+    return pos;
+  }
+  function setFontSizeLive(px, { commit = false, recordHistory = false } = {}) {
+    if (!target || !targetKey) return 24;
+    const size = Math.round(Math.min(220, Math.max(10, px)));
+    if (recordHistory) history();
+    if (commit) {
+      target.style.removeProperty('font-size');
+      setValue(targetKey, 'font-size', String(size));
+    } else {
+      target.style.setProperty('font-size', size + 'px', 'important');
+      updateOutline();
     }
-    if (moveHandle) moveHandle.dataset.pos = (!x && !y) ? 'move' : (Math.round(x) + ',' + Math.round(y));
-    return parseTranslate(value);
+    const label = $('be-live-size-label');
+    if (label) label.textContent = size + 'px';
+    const range = $('be-live-size-range');
+    if (range) range.value = String(size);
+    if (sizeHandle) sizeHandle.dataset.size = size + 'px';
+    return size;
   }
   function currentLetterSpacing(el) {
     const stored = editingRecord(targetKey)?.[activeScope]?.['letter-spacing'];
@@ -464,28 +486,22 @@
   function safeImageUrl(value) { return /^(https?:\/\/|data:image\/(png|jpeg|webp|gif);base64,|\/)/i.test(value); }
 
   function canDragResize(el) {
-    if (!el || el instanceof HTMLImageElement) return false;
-    if (el.matches?.('.hero-image,.image-placeholder,figure.look-photo,img')) return false;
-    return isTextSafe(el) || ['H1','H2','H3','H4','P','SPAN','A','DIV','FIGCAPTION','STRONG','EM','SMALL'].includes(el.tagName);
+    if (!el || !(el instanceof Element)) return false;
+    if (el instanceof HTMLImageElement) return false;
+    if (el.matches?.('section,header,footer,nav,main,form,.hero-image,.image-placeholder,figure.look-photo,img,svg')) return false;
+    if (el.querySelector?.('input,select,textarea,img,video,iframe,table,form')) return false;
+    return ['H1','H2','H3','H4','H5','P','SPAN','A','DIV','FIGCAPTION','STRONG','EM','SMALL','LABEL','LI','TIME','BUTTON'].includes(el.tagName);
   }
   function currentFontPx(el) {
     if (!el) return 24;
+    const inline = parseFloat(el.style?.fontSize);
+    if (inline > 0) return inline;
     const stored = parseFloat(editingRecord(targetKey)?.[activeScope]?.['font-size']);
     if (stored > 0) return stored;
     return Math.round(parseFloat(getComputedStyle(el).fontSize)) || 24;
   }
   function applyFontSize(px, { recordHistory = false } = {}) {
-    if (!target || !targetKey) return;
-    const size = Math.round(Math.min(220, Math.max(10, px)));
-    if (recordHistory) history();
-    setValue(targetKey, 'font-size', String(size));
-    const label = $('be-live-size-label');
-    if (label) label.textContent = size + 'px';
-    const range = $('be-live-size-range');
-    if (range) range.value = String(Math.min(Number(range.max) || 220, Math.max(Number(range.min) || 10, size)));
-    if (sizeHandle) sizeHandle.dataset.size = size + 'px';
-    updateOutline();
-    return size;
+    return setFontSizeLive(px, { commit: true, recordHistory });
   }
   function placeOutline(box, el) {
     if (!box) return;
@@ -698,7 +714,7 @@
 
   function lookEditor(root) {
     const curr = editingRecord(targetKey)[activeScope] || {};
-    root.append(help('Drag the gold corner to resize. Use the buttons to move text, space letters, or change the font.'));
+    root.append(help('On the page: drag ✥ or the gold box to move. Drag the gold corner ⤡ to resize. Buttons below also work.'));
 
     const fontWrap = document.createElement('div');
     fontWrap.className = 'be-field be-full';
@@ -1283,21 +1299,6 @@
     sizeHandle.setAttribute('aria-label', 'Drag to resize text');
     sizeHandle.innerHTML = '<span>⤡</span>';
     document.body.append(sizeHandle);
-    sizeHandle.addEventListener('pointerdown', event => {
-      if (!target || !canDragResize(target)) return;
-      event.preventDefault();
-      event.stopPropagation();
-      history();
-      sizeDrag = {
-        pointerId: event.pointerId,
-        startX: event.clientX,
-        startY: event.clientY,
-        startSize: currentFontPx(target)
-      };
-      sizeHandle.classList.add('be-dragging');
-      sizeHandle.setPointerCapture?.(event.pointerId);
-      notify('Drag to resize — up/right = bigger, down/left = smaller');
-    });
 
     moveHandle = document.createElement('button');
     moveHandle.type = 'button';
@@ -1305,31 +1306,122 @@
     moveHandle.setAttribute('aria-label', 'Drag to move text');
     moveHandle.innerHTML = '<span>✥</span>';
     document.body.append(moveHandle);
-    const beginMoveDrag = event => {
-      if (!target || !canDragResize(target) || sizeDrag) return;
+
+    const endGesture = () => {
+      gesture = null;
+      document.body.classList.remove('be-moving-text', 'be-resizing-text');
+      sizeHandle?.classList.remove('be-dragging');
+      moveHandle?.classList.remove('be-dragging');
+      outline?.classList.remove('be-dragging-move');
+      suppressClickUntil = Date.now() + 400;
+    };
+
+    const beginMoveGesture = event => {
+      if (event.button != null && event.button !== 0) return;
+      if (!target || !canDragResize(target) || gesture) return;
       event.preventDefault();
       event.stopPropagation();
+      event.stopImmediatePropagation?.();
       const pos = currentTranslate();
       history();
-      moveDrag = {
+      gesture = {
+        kind: 'move',
         pointerId: event.pointerId,
         startX: event.clientX,
         startY: event.clientY,
         originX: pos.x,
-        originY: pos.y
+        originY: pos.y,
+        moved: false
       };
       moveHandle.classList.add('be-dragging');
-      outline?.classList.add('be-dragging-move');
+      outline.classList.add('be-dragging-move');
       document.body.classList.add('be-moving-text');
-      moveHandle.setPointerCapture?.(event.pointerId);
-      notify('Drag anywhere — left, right, up, down');
+      try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* ignore */ }
+      notify('Drag to move — left, right, up, down');
     };
-    moveHandle.addEventListener('pointerdown', beginMoveDrag);
-    // Also allow dragging from the selection box itself (CMS-style).
-    outline.addEventListener('pointerdown', event => {
-      if (event.target === sizeHandle || event.target === moveHandle) return;
-      beginMoveDrag(event);
-    });
+
+    const beginResizeGesture = event => {
+      if (event.button != null && event.button !== 0) return;
+      if (!target || !canDragResize(target) || gesture) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation?.();
+      const rect = target.getBoundingClientRect();
+      const originX = rect.left;
+      const originY = rect.top;
+      const startSize = currentFontPx(target);
+      const startDist = Math.max(24, Math.hypot(event.clientX - originX, event.clientY - originY));
+      history();
+      gesture = {
+        kind: 'resize',
+        pointerId: event.pointerId,
+        originX,
+        originY,
+        startSize,
+        startDist,
+        moved: false
+      };
+      sizeHandle.classList.add('be-dragging');
+      document.body.classList.add('be-resizing-text');
+      try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* ignore */ }
+      notify('Drag corner to resize text');
+    };
+
+    moveHandle.addEventListener('pointerdown', beginMoveGesture);
+    outline.addEventListener('pointerdown', beginMoveGesture);
+    sizeHandle.addEventListener('pointerdown', beginResizeGesture);
+
+    const onGestureMove = event => {
+      if (!gesture || event.pointerId !== gesture.pointerId || !target) return;
+      event.preventDefault();
+      if (gesture.kind === 'move') {
+        const dx = event.clientX - gesture.startX;
+        const dy = event.clientY - gesture.startY;
+        if (Math.abs(dx) + Math.abs(dy) > 3) gesture.moved = true;
+        setTransformPosition(gesture.originX + dx, gesture.originY + dy, { commit: false });
+        return;
+      }
+      if (gesture.kind === 'resize') {
+        const dist = Math.max(8, Math.hypot(event.clientX - gesture.originX, event.clientY - gesture.originY));
+        if (Math.abs(dist - gesture.startDist) > 3) gesture.moved = true;
+        const next = gesture.startSize * (dist / gesture.startDist);
+        setFontSizeLive(next, { commit: false });
+      }
+    };
+    const onGestureUp = event => {
+      if (!gesture || event.pointerId !== gesture.pointerId) return;
+      if (gesture.kind === 'move') {
+        const dx = event.clientX - gesture.startX;
+        const dy = event.clientY - gesture.startY;
+        const pos = setTransformPosition(gesture.originX + dx, gesture.originY + dy, { commit: true });
+        endGesture();
+        notify((!pos.x && !pos.y) ? 'Back in place ✓' : 'Moved ✓');
+        return;
+      }
+      if (gesture.kind === 'resize') {
+        const dist = Math.max(8, Math.hypot(event.clientX - gesture.originX, event.clientY - gesture.originY));
+        const size = setFontSizeLive(gesture.startSize * (dist / gesture.startDist), { commit: true });
+        endGesture();
+        notify('Size ' + size + 'px ✓');
+      }
+    };
+    const onLostCapture = () => {
+      if (!gesture) return;
+      if (gesture.kind === 'move') {
+        const pos = currentTranslate();
+        setTransformPosition(pos.x, pos.y, { commit: true });
+      } else if (gesture.kind === 'resize') {
+        setFontSizeLive(currentFontPx(target), { commit: true });
+      }
+      endGesture();
+    };
+
+    for (const el of [moveHandle, sizeHandle, outline]) {
+      el.addEventListener('pointermove', onGestureMove, { passive: false });
+      el.addEventListener('pointerup', onGestureUp);
+      el.addEventListener('pointercancel', onGestureUp);
+      el.addEventListener('lostpointercapture', onLostCapture);
+    }
 
     const note = document.createElement('div');
     note.id = 'be-studio-note';
@@ -1431,9 +1523,8 @@
   }
   function closeStudio() {
     picking = false;
-    sizeDrag = null;
-    moveDrag = null;
-    document.body.classList.remove('be-studio-open', 'be-studio-picking', 'be-preview-desktop', 'be-preview-tablet', 'be-preview-mobile', 'be-moving-text');
+    gesture = null;
+    document.body.classList.remove('be-studio-open', 'be-studio-picking', 'be-preview-desktop', 'be-preview-tablet', 'be-preview-mobile', 'be-moving-text', 'be-resizing-text');
     document.documentElement.style.removeProperty('--be-preview-width');
     if (hoverOutline) hoverOutline.style.display = 'none';
     if (sizeHandle) {
@@ -1445,47 +1536,20 @@
       moveHandle.style.display = 'none';
     }
     outline?.classList.remove('be-dragging-move');
+    if (target) {
+      target.style.removeProperty('transform');
+      target.style.removeProperty('font-size');
+    }
     updateOutline();
   }
 
-  function onSizePointerMove(event) {
-    if (moveDrag && event.pointerId === moveDrag.pointerId) {
-      event.preventDefault();
-      const x = moveDrag.originX + (event.clientX - moveDrag.startX);
-      const y = moveDrag.originY + (event.clientY - moveDrag.startY);
-      setTransformPosition(x, y, { commit: false });
-      return;
-    }
-    if (!sizeDrag || event.pointerId !== sizeDrag.pointerId) return;
-    event.preventDefault();
-    const delta = (event.clientX - sizeDrag.startX) + (sizeDrag.startY - event.clientY);
-    const next = sizeDrag.startSize + delta * 0.35;
-    applyFontSize(next);
-  }
-  function onSizePointerUp(event) {
-    if (moveDrag && event.pointerId === moveDrag.pointerId) {
-      const x = moveDrag.originX + (event.clientX - moveDrag.startX);
-      const y = moveDrag.originY + (event.clientY - moveDrag.startY);
-      const finalPos = setTransformPosition(x, y, { commit: true });
-      moveDrag = null;
-      moveHandle?.classList.remove('be-dragging');
-      outline?.classList.remove('be-dragging-move');
-      document.body.classList.remove('be-moving-text');
-      notify((!finalPos.x && !finalPos.y) ? 'Back in place ✓' : 'Moved ✓  Save when you are ready.');
-      return;
-    }
-    if (!sizeDrag || event.pointerId !== sizeDrag.pointerId) return;
-    const finalSize = applyFontSize(currentFontPx(target));
-    sizeDrag = null;
-    sizeHandle?.classList.remove('be-dragging');
-    notify('Size set to ' + finalSize + 'px ✓  Save when you are ready.');
-  }
-  window.addEventListener('pointermove', onSizePointerMove, { passive: false });
-  window.addEventListener('pointerup', onSizePointerUp);
-  window.addEventListener('pointercancel', onSizePointerUp);
-
   document.addEventListener('click', event => {
-    if (sizeDrag || moveDrag) return;
+    if (gesture || Date.now() < suppressClickUntil) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      return;
+    }
     if (!isLiveSelectActive()) return;
     const el = event.target instanceof Element ? event.target : null;
     if (!el || inEditor(el)) return;
@@ -1498,6 +1562,7 @@
   }, true);
 
   document.addEventListener('pointermove', event => {
+    if (gesture) return;
     if (!isLiveSelectActive() || !hoverOutline) return;
     const el = event.target instanceof Element ? event.target : null;
     if (!el || inEditor(el)) { hoverOutline.style.display = 'none'; return; }
