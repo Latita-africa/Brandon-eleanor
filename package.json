@@ -6,7 +6,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "build": "node scripts/prepare-public.js",
+    "vercel-build": "node scripts/prepare-public.js"
   },
   "engines": {
     "node": ">=18"
