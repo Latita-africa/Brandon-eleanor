@@ -23,7 +23,10 @@
     ['Georgia, serif','Georgia'],
     ['Arial, sans-serif','Arial']
   ];
-  const GOOGLE_FONTS = new Set(['Cormorant Garamond','Playfair Display','Bodoni Moda','Great Vibes','Pinyon Script','DM Sans','Montserrat']);
+  const GOOGLE_FONTS = new Set([
+    'Cormorant Garamond','Playfair Display','Bodoni Moda','Great Vibes','Pinyon Script',
+    'DM Sans','Montserrat','Italiana','Prata','EB Garamond','Libre Baskerville','Manrope'
+  ]);
   const THEME = [
     ['navy','Blue','--wine','#111c38'],
     ['gold','Gold','--gold','#c5a16a'],
