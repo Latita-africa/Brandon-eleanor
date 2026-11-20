@@ -48,14 +48,15 @@
   if (!state.visualTheme || typeof state.visualTheme !== 'object') state.visualTheme = {...state.designTheme};
 
   let target = null, targetKey = '', picking = false, activeTab = 'words', activeScope = 'desktop';
-  let panel, outline, hoverOutline, contentRoot, undo = [], redo = [], noteTimer = 0;
+  let panel, outline, hoverOutline, sizeHandle, contentRoot, undo = [], redo = [], noteTimer = 0;
   let saving = false;
+  let sizeDrag = null;
   const $ = id => document.getElementById(id);
   const escapeSelector = s => (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
   const recordMap = () => (state.visualOverrides[PAGE] ||= {});
   const editingRecord = key => (recordMap()[key] ||= { desktop: {}, mobile: {}, tablet: {} });
   const sectionHost = () => document.querySelector(PAGE === 'index' ? 'main' : 'main.hero');
-  const inEditor = node => !!node?.closest?.('#be-studio-panel,#be-studio-launch,#be-studio-note,#editor,#backdrop,#editButton');
+  const inEditor = node => !!node?.closest?.('#be-studio-panel,#be-studio-launch,#be-studio-note,#be-size-handle,#be-saving-veil,#editor,#backdrop,#editButton');
   const belongsToPage = el => !!el?.closest?.('body > header,body > main,body > footer') && !inEditor(el);
   const NODE_SKIP = 'script,style,link,meta,noscript,template,svg,path,source,iframe,canvas';
 
@@ -247,6 +248,30 @@
   }
   function safeImageUrl(value) { return /^(https?:\/\/|data:image\/(png|jpeg|webp|gif);base64,|\/)/i.test(value); }
 
+  function canDragResize(el) {
+    if (!el || el instanceof HTMLImageElement) return false;
+    if (el.matches?.('.hero-image,.image-placeholder,figure.look-photo,img')) return false;
+    return isTextSafe(el) || ['H1','H2','H3','H4','P','SPAN','A','DIV','FIGCAPTION','STRONG','EM','SMALL'].includes(el.tagName);
+  }
+  function currentFontPx(el) {
+    if (!el) return 24;
+    const stored = parseFloat(editingRecord(targetKey)?.[activeScope]?.['font-size']);
+    if (stored > 0) return stored;
+    return Math.round(parseFloat(getComputedStyle(el).fontSize)) || 24;
+  }
+  function applyFontSize(px, { recordHistory = false } = {}) {
+    if (!target || !targetKey) return;
+    const size = Math.round(Math.min(220, Math.max(10, px)));
+    if (recordHistory) history();
+    setValue(targetKey, 'font-size', String(size));
+    const label = $('be-live-size-label');
+    if (label) label.textContent = size + 'px';
+    const range = $('be-live-size-range');
+    if (range) range.value = String(Math.min(Number(range.max) || 220, Math.max(Number(range.min) || 10, size)));
+    if (sizeHandle) sizeHandle.dataset.size = size + 'px';
+    updateOutline();
+    return size;
+  }
   function placeOutline(box, el) {
     if (!box) return;
     if (!el || !document.contains(el)) { box.style.display = 'none'; return; }
@@ -258,9 +283,22 @@
     box.style.width = rect.width + 'px';
     box.style.height = rect.height + 'px';
   }
+  function placeSizeHandle(el) {
+    if (!sizeHandle) return;
+    const show = !!(el && document.contains(el) && canDragResize(el) && (document.body.classList.contains('be-studio-open') || picking));
+    if (!show) { sizeHandle.style.display = 'none'; return; }
+    const rect = el.getBoundingClientRect();
+    sizeHandle.style.display = 'flex';
+    sizeHandle.style.top = (rect.bottom - 14) + 'px';
+    sizeHandle.style.left = (rect.right - 14) + 'px';
+    sizeHandle.dataset.size = Math.round(currentFontPx(el)) + 'px';
+    sizeHandle.title = 'Drag to make text bigger or smaller';
+  }
   function updateOutline() {
     if (!target || !document.contains(target)) target = resolve(targetKey);
-    placeOutline(outline, document.body.classList.contains('be-studio-open') || picking ? target : null);
+    const active = document.body.classList.contains('be-studio-open') || picking ? target : null;
+    placeOutline(outline, active);
+    placeSizeHandle(active);
   }
   function isLiveSelectActive() {
     return IS_OWNER && (picking || document.body.classList.contains('be-studio-open') || document.body.classList.contains('be-studio-picking'));
@@ -432,25 +470,36 @@
 
   function lookEditor(root) {
     const curr = editingRecord(targetKey)[activeScope] || {};
-    root.append(help('Make the writing bigger, smaller, or a different colour.'));
+    root.append(help('Drag the gold corner on the page to resize. Or use the buttons below.'));
     field(root, 'Font style', {
       type: 'select', full: true, value: curr['font-family'] || '', options: SIMPLE_FONTS,
       onChange: v => { history(); setValue(targetKey, 'font-family', v); }
     });
+
+    const nudge = document.createElement('div');
+    nudge.className = 'be-size-nudge';
+    root.append(nudge);
+    btn(nudge, 'A− Smaller', () => applyFontSize(currentFontPx(target) - 4, { recordHistory: true }), 'be-choice');
+    btn(nudge, 'A+ Bigger', () => applyFontSize(currentFontPx(target) + 4, { recordHistory: true }), 'be-choice');
+
     const sizeWrap = document.createElement('div');
     sizeWrap.className = 'be-field be-full';
     sizeWrap.innerHTML = '<label>Bigger or smaller</label>';
     const sizeRow = document.createElement('div');
     sizeRow.className = 'be-size-row';
     const sizeRange = document.createElement('input');
-    sizeRange.type = 'range'; sizeRange.min = '12'; sizeRange.max = '100'; sizeRange.step = '1';
-    const currentSize = parseFloat(curr['font-size']) || Math.round(parseFloat(getComputedStyle(target).fontSize)) || 24;
-    sizeRange.value = String(Math.min(100, Math.max(12, currentSize)));
+    sizeRange.type = 'range';
+    sizeRange.id = 'be-live-size-range';
+    sizeRange.min = '10';
+    sizeRange.max = '220';
+    sizeRange.step = '1';
+    const currentSize = currentFontPx(target);
+    sizeRange.value = String(Math.min(220, Math.max(10, currentSize)));
     const sizeLabel = document.createElement('strong');
+    sizeLabel.id = 'be-live-size-label';
     sizeLabel.textContent = sizeRange.value + 'px';
     sizeRange.addEventListener('input', () => {
-      history(); setValue(targetKey, 'font-size', sizeRange.value);
-      sizeLabel.textContent = sizeRange.value + 'px';
+      applyFontSize(Number(sizeRange.value), { recordHistory: true });
     });
     sizeRow.append(sizeRange, sizeLabel);
     sizeWrap.append(sizeRow);
@@ -868,6 +917,27 @@
     hoverOutline.id = 'be-studio-hover';
     hoverOutline.setAttribute('aria-hidden', 'true');
     document.body.append(hoverOutline);
+    sizeHandle = document.createElement('button');
+    sizeHandle.type = 'button';
+    sizeHandle.id = 'be-size-handle';
+    sizeHandle.setAttribute('aria-label', 'Drag to resize text');
+    sizeHandle.innerHTML = '<span>⤡</span>';
+    document.body.append(sizeHandle);
+    sizeHandle.addEventListener('pointerdown', event => {
+      if (!target || !canDragResize(target)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      history();
+      sizeDrag = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        startSize: currentFontPx(target)
+      };
+      sizeHandle.classList.add('be-dragging');
+      sizeHandle.setPointerCapture?.(event.pointerId);
+      notify('Drag to resize — up/right = bigger, down/left = smaller');
+    });
 
     const note = document.createElement('div');
     note.id = 'be-studio-note';
@@ -969,13 +1039,37 @@
   }
   function closeStudio() {
     picking = false;
+    sizeDrag = null;
     document.body.classList.remove('be-studio-open', 'be-studio-picking', 'be-preview-desktop', 'be-preview-tablet', 'be-preview-mobile');
     document.documentElement.style.removeProperty('--be-preview-width');
     if (hoverOutline) hoverOutline.style.display = 'none';
+    if (sizeHandle) {
+      sizeHandle.classList.remove('be-dragging');
+      sizeHandle.style.display = 'none';
+    }
     updateOutline();
   }
 
+  function onSizePointerMove(event) {
+    if (!sizeDrag || event.pointerId !== sizeDrag.pointerId) return;
+    event.preventDefault();
+    const delta = (event.clientX - sizeDrag.startX) + (sizeDrag.startY - event.clientY);
+    const next = sizeDrag.startSize + delta * 0.35;
+    applyFontSize(next);
+  }
+  function onSizePointerUp(event) {
+    if (!sizeDrag || event.pointerId !== sizeDrag.pointerId) return;
+    const finalSize = applyFontSize(currentFontPx(target));
+    sizeDrag = null;
+    sizeHandle?.classList.remove('be-dragging');
+    notify('Size set to ' + finalSize + 'px ✓  Save when you are ready.');
+  }
+  window.addEventListener('pointermove', onSizePointerMove, { passive: false });
+  window.addEventListener('pointerup', onSizePointerUp);
+  window.addEventListener('pointercancel', onSizePointerUp);
+
   document.addEventListener('click', event => {
+    if (sizeDrag) return;
     if (!isLiveSelectActive()) return;
     const el = event.target instanceof Element ? event.target : null;
     if (!el || inEditor(el)) return;
