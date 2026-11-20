@@ -1,4 +1,4 @@
-/* Brandon & Eleanor — baby-simple editor (build 2026.11.20.6) */
+/* Brandon & Eleanor — baby-simple editor (build 2026.11.20.7) */
 #be-studio-launch,
 #be-studio-panel,
 #be-studio-outline,
@@ -615,6 +615,42 @@ body.be-studio-open.be-preview-mobile > footer {
   box-shadow: 0 0 0 1px #b9a789, 0 18px 50px #00000033;
 }
 body.be-studio-open.be-preview-mobile > header { position: sticky !important; top: 0 !important; }
+
+#be-studio-panel .be-guest-status {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  background: #ebe4d8;
+  border-left: 3px solid #c5a16a;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+#be-studio-panel .be-guest-actions {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+}
+#be-studio-panel .be-guest-preview {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+#be-studio-panel .be-guest-row {
+  background: #fff;
+  border: 1px solid #dccfbc;
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+}
+#be-studio-panel .be-guest-row strong {
+  font: 600 13px/1.3 'DM Sans', Arial, sans-serif;
+  color: #1b2c43;
+}
+#be-studio-panel .be-guest-row span {
+  font-size: 12px;
+  color: #5a6578;
+  line-height: 1.45;
+}
 
 @media (max-width: 650px) {
   #be-studio-panel { width: 100vw; border-left: 0; }

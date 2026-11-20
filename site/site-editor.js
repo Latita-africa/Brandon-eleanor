@@ -193,6 +193,7 @@
   if (!state.visualTypographyScopes || typeof state.visualTypographyScopes !== 'object') state.visualTypographyScopes = {};
   if (!state.designTheme || typeof state.designTheme !== 'object') state.designTheme = {};
   if (!state.visualTheme || typeof state.visualTheme !== 'object') state.visualTheme = {...state.designTheme};
+  if (!Array.isArray(state.rsvpGuests)) state.rsvpGuests = [];
 
   let target = null, targetKey = '', picking = false, activeTab = 'words', activeScope = 'desktop';
   let panel, outline, hoverOutline, sizeHandle, moveHandle, contentRoot, undo = [], redo = [], noteTimer = 0;
@@ -1227,6 +1228,209 @@
     }
   }
 
+  function guestList() {
+    if (!Array.isArray(state.rsvpGuests)) state.rsvpGuests = [];
+    return state.rsvpGuests;
+  }
+
+  function notifyGuestsChanged() {
+    const count = guestList().length;
+    document.dispatchEvent(new CustomEvent('rsvp-guests-updated', { detail: { count } }));
+    window.weddingGuestCount = count;
+  }
+
+  function splitCsvLine(line) {
+    const cells = [];
+    let cur = '';
+    let quoted = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (quoted) {
+        if (ch === '"') {
+          if (line[i + 1] === '"') { cur += '"'; i++; }
+          else quoted = false;
+        } else cur += ch;
+      } else if (ch === '"') quoted = true;
+      else if (ch === ',') { cells.push(cur); cur = ''; }
+      else cur += ch;
+    }
+    cells.push(cur);
+    return cells.map(c => String(c || '').trim());
+  }
+
+  function parseGuestCsv(text) {
+    const raw = String(text || '').replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+    if (!lines.length) throw new Error('That CSV file is empty.');
+    const headerCells = splitCsvLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]+/g, ''));
+    const map = {
+      displayname: 'displayName', name: 'displayName', guestname: 'displayName', fullname: 'displayName', guest: 'displayName',
+      householdid: 'householdId', household: 'householdId', familyid: 'householdId',
+      householdname: 'householdName', family: 'householdName', familyname: 'householdName', householdlabel: 'householdName',
+      guesttype: 'guestType', type: 'guestType', role: 'guestType',
+      partysize: 'partySize', guests: 'partySize', size: 'partySize',
+      id: 'id', guestid: 'id'
+    };
+    const cols = headerCells.map(h => map[h] || null);
+    const hasNameCol = cols.includes('displayName');
+    if (!hasNameCol && headerCells.some(h => /name|guest/.test(h))) {
+      // keep trying — map may have failed on odd headers
+    }
+    if (!hasNameCol) {
+      // Allow headerless single-column name lists: treat first line as data if it looks like a person
+      const firstLooksLikeHeader = /name|guest|household|family|type|size/i.test(lines[0]);
+      if (!firstLooksLikeHeader) {
+        return lines.map((line, i) => {
+          const name = splitCsvLine(line)[0];
+          return {
+            id: 'g-' + (i + 1),
+            displayName: name,
+            householdId: 'solo-' + (i + 1),
+            householdName: name,
+            guestType: '',
+            partySize: 1
+          };
+        }).filter(g => g.displayName);
+      }
+      throw new Error('CSV needs a Name / displayName column.');
+    }
+    const guests = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cells = splitCsvLine(lines[i]);
+      if (!cells.some(Boolean)) continue;
+      const row = {};
+      cols.forEach((key, idx) => {
+        if (!key) return;
+        row[key] = cells[idx] ?? '';
+      });
+      const displayName = String(row.displayName || '').trim().replace(/\s+/g, ' ');
+      if (!displayName) continue;
+      let householdId = String(row.householdId || '').trim();
+      const householdName = String(row.householdName || '').trim() || displayName;
+      if (!householdId) householdId = 'solo-' + displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+      const idBase = (row.id || (householdId + '-' + displayName)).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 72);
+      const partySize = Math.max(1, Math.min(50, Number(row.partySize) || 1));
+      guests.push({
+        id: idBase || ('g-' + i),
+        displayName,
+        householdId,
+        householdName,
+        guestType: String(row.guestType || '').trim().toLowerCase(),
+        partySize
+      });
+    }
+    if (!guests.length) throw new Error('No guest names found in that CSV.');
+    // Deduplicate by id, keep first
+    const uniq = new Map();
+    for (const g of guests) {
+      let id = g.id;
+      let n = 2;
+      while (uniq.has(id)) id = g.id + '-' + (n++);
+      uniq.set(id, { ...g, id });
+    }
+    return [...uniq.values()];
+  }
+
+  function downloadGuestCsvTemplate() {
+    const csv = [
+      'displayName,householdId,householdName,guestType,partySize',
+      'Jane Doe,family-doe,The Doe Family,adult,1',
+      'John Doe,family-doe,The Doe Family,adult,1',
+      'Sam Smith,family-smith,The Smith Family,adult,1'
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'wedding-guest-list-template.csv';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  }
+
+  function guestsEditor(root) {
+    if (PAGE !== 'index') {
+      root.append(help('Guest list upload is on the main wedding invitation page.'));
+      return;
+    }
+    const list = guestList();
+    root.append(help('Upload a guest CSV. When people RSVP, they type their name and we check this list.'));
+    root.append(help('Family members must share the same householdId so they reply together.'));
+
+    const status = document.createElement('p');
+    status.className = 'be-guest-status';
+    status.textContent = list.length
+      ? list.length + ' guest' + (list.length === 1 ? '' : 's') + ' on the RSVP list'
+      : 'No guests uploaded yet — RSVP name search will stay empty until you upload.';
+    root.append(status);
+
+    const actions = document.createElement('div');
+    actions.className = 'be-guest-actions';
+    root.append(actions);
+
+    btn(actions, '📥 Download CSV template', downloadGuestCsvTemplate, 'be-full');
+
+    const file = document.createElement('input');
+    file.type = 'file';
+    file.accept = '.csv,text/csv';
+    file.hidden = true;
+    root.append(file);
+    btn(actions, '📤 Upload guest CSV', () => file.click(), 'be-primary be-full');
+
+    file.addEventListener('change', async () => {
+      const chosen = file.files?.[0];
+      file.value = '';
+      if (!chosen) return;
+      try {
+        const text = await chosen.text();
+        const parsed = parseGuestCsv(text);
+        history();
+        state.rsvpGuests = parsed;
+        if (typeof window.persistWeddingDraft === 'function') window.persistWeddingDraft();
+        else saveDraft();
+        notifyGuestsChanged();
+        notify('Loaded ' + parsed.length + ' guests ✓ Save to website so RSVP can use them');
+        renderPanel();
+      } catch (error) {
+        notify(error.message || 'Could not read that CSV.');
+      }
+    });
+
+    if (list.length) {
+      btn(actions, '🗑 Clear guest list', () => {
+        if (!confirm('Remove all uploaded guests from the RSVP list?')) return;
+        history();
+        state.rsvpGuests = [];
+        if (typeof window.persistWeddingDraft === 'function') window.persistWeddingDraft();
+        else saveDraft();
+        notifyGuestsChanged();
+        notify('Guest list cleared');
+        renderPanel();
+      }, 'be-warn be-full');
+
+      const preview = document.createElement('div');
+      preview.className = 'be-guest-preview';
+      const houses = new Map();
+      for (const g of list) {
+        const key = g.householdId || g.id;
+        if (!houses.has(key)) houses.set(key, { title: g.householdName || g.displayName, names: [] });
+        houses.get(key).names.push(g.displayName);
+      }
+      const shown = [...houses.values()].slice(0, 12);
+      for (const house of shown) {
+        const row = document.createElement('div');
+        row.className = 'be-guest-row';
+        row.innerHTML = '<strong>' + htmlEscape(house.title) + '</strong><span>' + htmlEscape(house.names.join(', ')) + '</span>';
+        preview.append(row);
+      }
+      if (houses.size > shown.length) {
+        const more = document.createElement('p');
+        more.className = 'be-help';
+        more.textContent = '+' + (houses.size - shown.length) + ' more households…';
+        preview.append(more);
+      }
+      root.append(preview);
+    }
+  }
+
   function renderPanel() {
     if (!contentRoot) return;
     contentRoot.replaceChildren();
@@ -1248,8 +1452,26 @@
       btn(contentRoot, '👆 Hide panel & tap the page', startPick, 'be-primary be-big');
     }
 
+    const switcher = document.createElement('div');
+    switcher.className = 'be-easy-tabs';
+    contentRoot.append(switcher);
+    const tabs = target
+      ? [['words', '✏️ Words'], ['look', '🎨 Look'], ['photo', '📷 Picture'], ['colours', '🌈 Site colours'], ['sections', '↕️ Move parts'], ['guests', '📋 Guest list']]
+      : [['guests', '📋 Guest list'], ['colours', '🌈 Site colours']];
+    for (const [name, label] of tabs) {
+      const b = btn(switcher, label, () => { activeTab = name; renderPanel(); });
+      if (activeTab === name || (activeTab === 'style' && name === 'look')) b.classList.add('be-on');
+    }
+
     if (!target) {
-      contentRoot.append(help('Nothing selected yet. Tap something on the wedding page.'));
+      contentRoot.append(help('Nothing selected yet. Tap something on the wedding page — or open Guest list to upload RSVP names.'));
+      if (activeTab !== 'guests' && activeTab !== 'colours') activeTab = 'guests';
+      stepTitle(contentRoot, '2', activeTab === 'guests' ? 'RSVP guest list' : 'Site colours');
+      const body = document.createElement('div');
+      body.className = 'be-fields';
+      contentRoot.append(body);
+      if (activeTab === 'guests') guestsEditor(body);
+      else siteColours(body);
       return;
     }
 
@@ -1257,14 +1479,6 @@
     selected.className = 'be-selected';
     selected.innerHTML = '<strong>Editing now:</strong><span>' + htmlEscape(friendlyName(target)) + '</span><small>Tap something else on the page to switch</small>';
     contentRoot.append(selected);
-
-    const switcher = document.createElement('div');
-    switcher.className = 'be-easy-tabs';
-    contentRoot.append(switcher);
-    for (const [name, label] of [['words', '✏️ Words'], ['look', '🎨 Look'], ['photo', '📷 Picture'], ['colours', '🌈 Site colours'], ['sections', '↕️ Move parts']]) {
-      const b = btn(switcher, label, () => { activeTab = name; renderPanel(); });
-      if (activeTab === name || (activeTab === 'style' && name === 'look')) b.classList.add('be-on');
-    }
 
     const device = document.createElement('div');
     device.className = 'be-device-bar';
@@ -1283,7 +1497,7 @@
       if (activeScope === value) b.classList.add('be-on');
     }
 
-    stepTitle(contentRoot, '2', 'Change it');
+    stepTitle(contentRoot, '2', activeTab === 'guests' ? 'RSVP guest list' : 'Change it');
     const body = document.createElement('div');
     body.className = 'be-fields';
     contentRoot.append(body);
@@ -1295,6 +1509,7 @@
     else if (tab === 'photo') photoEditor(body);
     else if (tab === 'colours') siteColours(body);
     else if (tab === 'sections') sectionsSimple(body);
+    else if (tab === 'guests') guestsEditor(body);
 
     const tools = document.createElement('div');
     tools.className = 'be-actions';
@@ -1341,6 +1556,7 @@
     data.visualTheme = config.visualTheme || config.designTheme || data.visualTheme || {};
     data.styleOverrides = config.styleOverrides || {};
     data.backgroundPhotos = config.backgroundPhotos || {};
+    data.rsvpGuests = Array.isArray(config.rsvpGuests) ? config.rsvpGuests : (data.rsvpGuests || []);
 
     state = data;
     if (!state.visualOverrides) state.visualOverrides = {};
@@ -1397,7 +1613,9 @@
         visualOrder: state.visualOrder || liveState.visualOrder || {},
         visualTypographyScopes: state.visualTypographyScopes || liveState.visualTypographyScopes || {},
         styleOverrides: liveState.styleOverrides || state.styleOverrides || {},
-        backgroundPhotos: liveState.backgroundPhotos || state.backgroundPhotos || {}
+        backgroundPhotos: liveState.backgroundPhotos || state.backgroundPhotos || {},
+        rsvpGuests: Array.isArray(state.rsvpGuests) ? state.rsvpGuests
+          : (Array.isArray(liveState.rsvpGuests) ? liveState.rsvpGuests : [])
       };
 
       setSavingUi(true, 'Uploading photos & saving…');
