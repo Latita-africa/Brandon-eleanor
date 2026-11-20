@@ -18,7 +18,8 @@ a{text-decoration:none;color:inherit}button,input{font:inherit}button{cursor:poi
 .content{position:relative;z-index:1;max-width:820px}
 .eyebrow{font-size:11px;letter-spacing:.27em;color:#d5b889;text-transform:uppercase;font-weight:600}
 h1{font:300 clamp(82px,13vw,185px)/.91 'Cormorant Garamond',Georgia,serif;letter-spacing:-.04em;margin:24px 0 28px}
-.lead{font:300 clamp(20px,2.3vw,27px)/1.6 'Cormorant Garamond',Georgia,serif;max-width:690px;margin:auto;color:#f5f0e9}
+.lead{font:300 clamp(20px,2.3vw,27px)/1.6 'Cormorant Garamond',Georgia,serif;max-width:690px;margin:auto;color:#f5f0e9;white-space:pre-line}
+.eyebrow,h1,.status h2,.status p,.closing,.fine,#photoEyebrow,#photoTitle,#photoIntro,#closedTitle,#openDate,#futureNote,#signed{white-space:pre-line}
 .goldline{height:1px;width:48px;background:var(--gold);margin:36px auto}
 .status{border:1px solid #c5a16a77;padding:22px 25px;display:inline-block;margin-top:14px;max-width:100%;background:#ffffff08}
 .status h2{font:400 28px/1.2 'Cormorant Garamond',Georgia,serif;margin:0 0 5px}
@@ -48,7 +49,7 @@ footer{text-align:center;padding:36px 20px;background:#09132c;color:#e5d5bb;lett
 .hero.with-custom-photo{background-size:cover!important;background-attachment:scroll!important}
 .upload-form input[type=file]{cursor:pointer}
 .upload-form input[type=file]::file-selector-button{border:1px solid #b79764;background:#efe5d6;color:#16253f;padding:10px 13px;font:600 11px 'DM Sans',sans-serif;letter-spacing:.07em;text-transform:uppercase;margin-right:14px}
-</style><meta content="noindex,nofollow" name="robots"><link rel="stylesheet" href="/mobile.css?v=20261120-mobile-v1"><link rel="stylesheet" href="/site-editor.css?v=20261120-drag-v2">
+</style><meta content="noindex,nofollow" name="robots"><link rel="stylesheet" href="/mobile.css?v=20261120-hero-v1"><link rel="stylesheet" href="/site-editor.css?v=20261120-hero-v1">
 <script id="wix-site-script" src="https://manage.wix.com/_api/headless-business-setup/v1/headless-business/site-script.js" data-client-id="2cd54a2c-c5e2-41f6-8e05-c3fb506c8c3a" async></script></head><body>
 <main class="hero">
 <header class="top"><a class="brand" href="/" id="initials">B <span>&amp;</span> E</a><a class="back" href="/">Return to the invitation</a></header>
@@ -93,7 +94,9 @@ async function openThePhotographPage(){
 
  document.getElementById('initials').innerHTML=(cfg.firstName[0]||'B')+' <span>&amp;</span> '+(cfg.secondName[0]||'E');
  for(const [id,key] of Object.entries({photoEyebrow:'photoPageEyebrow',photoTitle:'photoPageTitle',photoIntro:'photoPageIntro',closedTitle:'photoPageComing',openDate:'photoPageDate',futureNote:'photoPageNote'})){
-  document.getElementById(id).textContent=cfg[key]||base[key];
+  const el=document.getElementById(id);
+  if(!el)continue;
+  el.textContent=String(cfg[key]||base[key]||'').replace(/\r\n/g,'\n');
  }
  document.getElementById('signed').textContent=cfg.firstName+' & '+cfg.secondName+' · The wedding';
  // A true upload service is shown only once the wedding owner has configured a real Wix form and explicitly enabled it.
@@ -172,5 +175,5 @@ if(window.photoPageSettings?.photoUploadsEnabled && window.photoPageSettings?.ph
 if(window.photoPageSettings?.photoUploadsEnabled && window.photoPageSettings?.photoFormId){
   window.dispatchEvent(new CustomEvent('guest-photo-form-ready', { detail: {formId: window.photoPageSettings.photoFormId} }));
 }
-</script><script src="/live-bridge.js?v=20261120-cache-v3"></script><script src="/site-editor.js?v=20261120-drag-v2"></script>
+</script><script src="/live-bridge.js?v=20261120-cache-v3"></script><script src="/site-editor.js?v=20261120-breaks-v1"></script>
 </body></html>

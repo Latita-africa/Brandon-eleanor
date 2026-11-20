@@ -9,7 +9,8 @@
     'font-size','font-family','font-weight','font-style','line-height','letter-spacing','text-align','text-transform',
     'color','background-color','background-image','background-size','background-position','background-repeat',
     'padding','margin','margin-left','margin-right','width','max-width','height','min-height','border','border-radius',
-    'box-shadow','opacity','display','object-fit','object-position','transform'
+    'box-shadow','opacity','display','position','top','left','right','bottom','object-fit','object-position','transform',
+    'white-space'
   ]);
   const SYSTEM_FONTS = new Set(['Georgia', 'Arial', 'Times New Roman', 'serif', 'sans-serif', 'cursive', 'monospace', 'Keep original']);
   const FONT_CHOICES = [
@@ -229,8 +230,19 @@
   function friendlyName(el) {
     if (!el) return 'Nothing selected yet';
     const text = (el.innerText || el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 42);
+    if (el.id === 'heroAmp' || el.classList?.contains('amp')) return 'Hero · & symbol';
+    if (el.id === 'heroFirst') return 'Hero · First name';
+    if (el.id === 'heroSecond') return 'Hero · Second name';
+    if (el.id === 'heroMonogram' || el.matches?.('.hero-monogram')) return 'Hero · Monogram';
+    if (el.id === 'heroDate' || el.matches?.('.hero-date')) return 'Hero · Date line';
+    if (el.id === 'heroEyebrow' || el.matches?.('.hero-eyebrow')) return 'Hero · Eyebrow';
+    if (el.id === 'heroButton') return 'Hero · RSVP button';
+    if (el.id === 'heroVertical') return 'Hero · Side text';
+    if (el.id === 'heroScroll') return 'Hero · Scroll text';
+    if (el.id === 'heroPhoto' || el.matches?.('.hero-image')) return 'Hero · Cover photo';
+    if (el.id === 'heroNames') return 'Hero · Names';
     if (el.matches('section,[data-be-section]')) return 'Section · ' + (el.querySelector('h1,h2,h3')?.textContent?.trim().slice(0, 28) || el.id || 'block');
-    if (el instanceof HTMLImageElement || el.matches('.hero-image,.image-placeholder')) return 'Photo · ' + (el.id || text || 'image');
+    if (el instanceof HTMLImageElement || el.matches('.image-placeholder')) return 'Photo · ' + (el.id || text || 'image');
     if (el.tagName === 'H1' || el.tagName === 'H2' || el.tagName === 'H3') return 'Heading · ' + text;
     if (el.tagName === 'P') return 'Paragraph · ' + text;
     if (el.tagName === 'A' || el.tagName === 'BUTTON') return 'Button / link · ' + text;
@@ -344,13 +356,37 @@
     }
     if (moveHandle) moveHandle.dataset.pos = (!pos.x && !pos.y) ? 'drag me' : (pos.x + ',' + pos.y);
   }
+  function ensureMovableDisplay(el, { commit = false } = {}) {
+    if (!el) return;
+    const display = getComputedStyle(el).display;
+    // transform is ignored on pure inline elements (this is why & would not move)
+    if (display === 'inline' || display === 'contents') {
+      if (commit) setValue(itemKey(el) || targetKey, 'display', 'inline-block', activeScope, { refresh: false, draft: false });
+      el.style.setProperty('display', 'inline-block', 'important');
+    }
+    if (getComputedStyle(el).position === 'static') {
+      if (commit) {
+        const key = itemKey(el) || targetKey;
+        const rec = editingRecord(key)[activeScope] || {};
+        if (!rec.position) setValue(key, 'position', 'relative', activeScope, { refresh: false, draft: false });
+      }
+      el.style.setProperty('position', 'relative', 'important');
+    }
+  }
   function setTransformPosition(x, y, { commit = false, recordHistory = false } = {}) {
     if (!target || !targetKey) return { x: 0, y: 0 };
     const value = formatTranslate(x, y);
     const pos = parseTranslate(value);
     if (recordHistory) history();
+    ensureMovableDisplay(target, { commit });
     if (commit) {
       target.style.removeProperty('transform');
+      // keep display/position helpers in the saved scope with the transform
+      if (value) {
+        const group = editingRecord(targetKey)[activeScope] ||= {};
+        if (!group.display) group.display = 'inline-block';
+        if (!group.position) group.position = 'relative';
+      }
       setValue(targetKey, 'transform', value);
     } else {
       target.style.setProperty('transform', value || 'none', 'important');
@@ -413,6 +449,18 @@
     if (theme.navy) decls.push('--navy:' + theme.navy);
     return decls.length ? ':root{' + decls.join(';') + '}' : '';
   }
+  function prefixSelectors(ruleBlock, prefix) {
+    // "a,b{x}" -> "prefix a, prefix b{x}"
+    return String(ruleBlock || '').replace(/(^|})\s*([^@}{][^{]*)\{/g, (_, brace, selectors) => {
+      const parts = selectors.split(',').map(s => {
+        const sel = s.trim();
+        if (!sel) return sel;
+        if (sel.startsWith(prefix.trim())) return sel;
+        return prefix + sel;
+      }).filter(Boolean);
+      return brace + parts.join(', ') + '{';
+    });
+  }
   function sheetRules() {
     const all = [];
     const records = recordMap();
@@ -427,10 +475,26 @@
           if (val && ['font-size', 'letter-spacing', 'border-radius'].includes(prop) && /^-?\d+(?:\.\d+)?$/.test(val)) val += 'px';
           if (val) decl.push(prop + ':' + val + ' !important');
         }
+        // Transforms need a non-inline box or browsers ignore them (e.g. & span).
+        if (styles.transform && !styles.display) decl.push('display:inline-block !important');
+        if (styles.transform && !styles.position) decl.push('position:relative !important');
         if (scope === 'desktop' && rec.hidden === true) decl.push('display:none !important');
         if (decl.length) rules.push(key + '{' + decl.join(';') + '}');
       }
-      if (rules.length) all.push(scope === 'desktop' ? rules.join('\n') : mediaRule(scope) + '{\n' + rules.join('\n') + '\n}');
+      if (!rules.length) continue;
+      if (scope === 'desktop') {
+        all.push(rules.join('\n'));
+        continue;
+      }
+      // Real phones/tablets
+      all.push(mediaRule(scope) + '{\n' + rules.join('\n') + '\n}');
+      // Studio device preview: viewport is still desktop-wide, so media queries
+      // never match. Mirror the same rules under the preview body class.
+      if (scope === 'mobile') {
+        all.push(prefixSelectors(rules.join('\n'), 'body.be-studio-open.be-preview-mobile '));
+      } else if (scope === 'tablet') {
+        all.push(prefixSelectors(rules.join('\n'), 'body.be-studio-open.be-preview-tablet '));
+      }
     }
     return all.join('\n');
   }
@@ -453,7 +517,13 @@
     if (style.textContent !== css) style.textContent = css;
     for (const [key, rec] of Object.entries(recordMap())) {
       const el = resolve(key); if (!el) continue;
-      if (typeof rec.text === 'string' && isTextSafe(el) && el.textContent !== rec.text) el.textContent = rec.text;
+      if (typeof rec.text === 'string' && (isTextSafe(el) || el.matches?.('#heroAmp,.amp,#heroFirst,#heroSecond,#heroMonogram,#heroDate'))) {
+        const normalized = String(rec.text).replace(/\r\n/g, '\n');
+        if ((el.innerText || el.textContent || '').replace(/\r\n/g, '\n') !== normalized) {
+          el.textContent = normalized;
+        }
+        if (/\n/.test(normalized)) el.style.setProperty('white-space', 'pre-line', 'important');
+      }
       if (typeof rec.alt === 'string' && el instanceof HTMLImageElement && el.alt !== rec.alt) el.alt = rec.alt;
       if (el instanceof HTMLImageElement && Object.prototype.hasOwnProperty.call(rec, 'src')) {
         if (typeof rec.src === 'string' && rec.src && safeImageUrl(rec.src)) {
@@ -487,9 +557,11 @@
 
   function canDragResize(el) {
     if (!el || !(el instanceof Element)) return false;
-    if (el instanceof HTMLImageElement) return false;
-    if (el.matches?.('section,header,footer,nav,main,form,.hero-image,.image-placeholder,figure.look-photo,img,svg')) return false;
-    if (el.querySelector?.('input,select,textarea,img,video,iframe,table,form')) return false;
+    if (el instanceof HTMLImageElement) return true; // photos can be selected; resize handle hidden separately for imgs
+    if (el.matches?.('section,header,footer,nav,main,form,img,svg')) return false;
+    if (el.matches?.('.hero-image,#heroPhoto,.image-placeholder,figure.look-photo')) return true;
+    if (el.querySelector?.('input,select,textarea,video,iframe,table,form')) return false;
+    if (el.closest?.('.hero') && el.matches?.('h1,h2,h3,p,span,a,div,button,.btn,.eyebrow,.amp,#heroAmp,#heroFirst,#heroSecond,#heroMonogram,#heroDate,#heroEyebrow,#heroButton,#heroVertical,#heroScroll,.hero-monogram,.hero-date,.hero-footer,.vertical-copy,.hero-content')) return true;
     return ['H1','H2','H3','H4','H5','P','SPAN','A','DIV','FIGCAPTION','STRONG','EM','SMALL','LABEL','LI','TIME','BUTTON'].includes(el.tagName);
   }
   function currentFontPx(el) {
@@ -516,7 +588,7 @@
   }
   function placeSizeHandle(el) {
     if (!sizeHandle) return;
-    const show = !!(el && document.contains(el) && canDragResize(el) && (document.body.classList.contains('be-studio-open') || picking));
+    const show = !!(el && document.contains(el) && canDragResize(el) && !(el instanceof HTMLImageElement) && !el.matches?.('.hero-image,#heroPhoto,.image-placeholder') && (document.body.classList.contains('be-studio-open') || picking));
     if (!show) { sizeHandle.style.display = 'none'; return; }
     const rect = el.getBoundingClientRect();
     sizeHandle.style.display = 'flex';
@@ -559,10 +631,20 @@
     const blocked = el.closest?.('#wixRsvpFields,#photoFormFields,#wixPhotoUploadForm,#guestSearchResults');
     if (blocked && el.matches?.('input,select,textarea,button[type="submit"]')) return null;
 
+    // Hero pieces first — keep & / names / date / monogram independently editable.
+    const heroBit = el.closest?.('#heroAmp,.amp,#heroFirst,#heroSecond,#heroMonogram,#heroDate,#heroEyebrow,#heroButton,#heroVertical,#heroScroll,#heroNames,#heroPhoto,.hero-monogram,.hero-eyebrow,.hero-date,.hero-footer,.vertical-copy,.hero-image');
+    if (heroBit && belongsToPage(heroBit)) {
+      if (heroBit.id === 'heroNames' || heroBit.tagName === 'H1') {
+        const leaf = el.closest?.('#heroAmp,.amp,#heroFirst,#heroSecond');
+        if (leaf && belongsToPage(leaf)) return leaf;
+      }
+      return heroBit;
+    }
+
     const img = el.closest?.('img');
     if (img && belongsToPage(img)) return img;
 
-    const photoBox = el.closest?.('.hero-image,.image-placeholder,figure.look-photo,#heroPhoto,#storyPhoto,#venuePhoto');
+    const photoBox = el.closest?.('.image-placeholder,figure.look-photo,#storyPhoto,#venuePhoto');
     if (photoBox && belongsToPage(photoBox)) return photoBox.querySelector('img') || photoBox;
 
     // Prefer the smallest text piece under the click.
@@ -690,24 +772,70 @@
     root.append(h);
   }
 
+  function applyPlainText(el, value, { persistBreaks = true } = {}) {
+    if (!el) return;
+    const text = String(value ?? '').replace(/\r\n/g, '\n');
+    el.textContent = text;
+    if (/\n/.test(text)) {
+      el.style.setProperty('white-space', 'pre-line', 'important');
+      if (persistBreaks && targetKey) {
+        const group = editingRecord(targetKey)[activeScope] ||= {};
+        group['white-space'] = 'pre-line';
+      }
+    } else {
+      el.style.removeProperty('white-space');
+      if (persistBreaks && targetKey) {
+        const group = editingRecord(targetKey)[activeScope];
+        if (group && group['white-space'] === 'pre-line') delete group['white-space'];
+      }
+    }
+  }
+
   function wordsEditor(root) {
     const rec = editingRecord(targetKey);
-    if (!isTextSafe(target)) {
+    const heroSpecial = target?.matches?.('#heroAmp,.amp,#heroFirst,#heroSecond,#heroMonogram,#heroDate,#heroNames');
+    if (!isTextSafe(target) && !heroSpecial) {
       root.append(help('That spot has lots of words together. Tap a smaller line of writing on the page.'));
       return;
     }
-    root.append(help('Type the new words here. You will see them change on the page.'));
+    root.append(help(target?.id === 'heroAmp' || target?.classList?.contains('amp')
+      ? 'This is the & between the names. You can change or move it.'
+      : 'Type here. Press Enter for a new line — it will show on the page.'));
+    const currentText = typeof rec.text === 'string'
+      ? rec.text
+      : String(target.innerText || target.textContent || '').replace(/\r\n/g, '\n');
     field(root, 'Type here', {
-      type: 'textarea', full: true,
-      value: typeof rec.text === 'string' ? rec.text : target.textContent,
+      type: 'textarea', full: true, event: 'input',
+      value: currentText,
       onChange: value => {
         history();
-        if (target.dataset?.edit && PAGE === 'index') {
-          state[target.dataset.edit] = value;
+        const next = String(value ?? '').replace(/\r\n/g, '\n');
+        if (target.id === 'heroFirst' && PAGE === 'index') {
+          state.firstName = next;
           delete rec.text;
+          applyPlainText(target, next);
+          if (typeof window.persistWeddingDraft === 'function') window.persistWeddingDraft();
           if (typeof window.apply === 'function') window.apply();
-        } else setValue(targetKey, 'text', value);
-        saveDraft(); refreshVisual();
+        } else if (target.id === 'heroSecond' && PAGE === 'index') {
+          state.secondName = next;
+          delete rec.text;
+          applyPlainText(target, next);
+          if (typeof window.persistWeddingDraft === 'function') window.persistWeddingDraft();
+          if (typeof window.apply === 'function') window.apply();
+        } else if (target.dataset?.edit && PAGE === 'index') {
+          state[target.dataset.edit] = next;
+          delete rec.text;
+          applyPlainText(target, next);
+          if (typeof window.persistWeddingDraft === 'function') window.persistWeddingDraft();
+          if (typeof window.apply === 'function') window.apply();
+        } else {
+          setValue(targetKey, 'text', next, activeScope, { refresh: false, draft: true });
+          applyPlainText(target, next);
+        }
+        if (/\n/.test(next)) setValue(targetKey, 'white-space', 'pre-line', activeScope, { refresh: false, draft: true });
+        saveDraft();
+        refreshVisual();
+        updateOutline();
       }
     });
   }
@@ -1143,7 +1271,15 @@
     contentRoot.append(device);
     device.append(Object.assign(document.createElement('span'), { textContent: 'Checking on:' }));
     for (const [value, label] of [['desktop', '💻 Computer'], ['mobile', '📱 Phone']]) {
-      const b = btn(device, label, () => { activeScope = value; applyDevicePreview(); renderPanel(); });
+      const b = btn(device, label, () => {
+        activeScope = value;
+        applyDevicePreview();
+        refreshVisual();
+        renderPanel();
+        notify(value === 'mobile'
+          ? 'Phone mode ✓ Changes here are for phone layout'
+          : 'Computer mode ✓ Changes here are for desktop');
+      });
       if (activeScope === value) b.classList.add('be-on');
     }
 

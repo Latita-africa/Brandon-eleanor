@@ -210,6 +210,12 @@ body.be-preview-mobile .hero-content {
 }
 body.be-preview-mobile .vertical-copy,
 body.be-preview-mobile .hero-footer { display: none !important; }
+/* Keep them editable while the studio is open */
+body.be-studio-open.be-preview-mobile .vertical-copy,
+body.be-studio-open.be-preview-mobile .hero-footer {
+  display: block !important;
+  opacity: 0.95;
+}
 body.be-preview-mobile .hero-monogram { font-size: 18px; }
 body.be-preview-mobile .hero-eyebrow {
   font-size: 9px !important;
