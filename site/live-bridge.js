@@ -146,7 +146,8 @@
         throw new Error('Wrong password. Try again.');
       }
       if (!res.ok || !payload.ok) throw new Error(payload.error || 'Could not publish.');
-      return payload;
+      // Prefer server config (photos already turned into real URLs).
+      return { ...payload, config: payload.config || ready };
     },
     async resetBrowserToLive() {
       localStorage.removeItem(STORAGE_KEY);

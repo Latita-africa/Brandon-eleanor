@@ -49,6 +49,7 @@
 
   let target = null, targetKey = '', picking = false, activeTab = 'words', activeScope = 'desktop';
   let panel, outline, hoverOutline, contentRoot, undo = [], redo = [], noteTimer = 0;
+  let saving = false;
   const $ = id => document.getElementById(id);
   const escapeSelector = s => (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
   const recordMap = () => (state.visualOverrides[PAGE] ||= {});
@@ -216,7 +217,15 @@
       const el = resolve(key); if (!el) continue;
       if (typeof rec.text === 'string' && isTextSafe(el) && el.textContent !== rec.text) el.textContent = rec.text;
       if (typeof rec.alt === 'string' && el instanceof HTMLImageElement && el.alt !== rec.alt) el.alt = rec.alt;
-      if (typeof rec.src === 'string' && el instanceof HTMLImageElement && safeImageUrl(rec.src) && el.getAttribute('src') !== rec.src) el.setAttribute('src', rec.src);
+      if (el instanceof HTMLImageElement && Object.prototype.hasOwnProperty.call(rec, 'src')) {
+        if (typeof rec.src === 'string' && rec.src && safeImageUrl(rec.src)) {
+          if (el.getAttribute('src') !== rec.src) el.setAttribute('src', rec.src);
+          el.hidden = false;
+        } else {
+          el.removeAttribute('src');
+          el.hidden = true;
+        }
+      }
       if (typeof rec.href === 'string' && el instanceof HTMLAnchorElement && safeLink(rec.href) && el.getAttribute('href') !== rec.href) el.setAttribute('href', rec.href);
     }
     applySectionOrder();
@@ -464,10 +473,83 @@
     row.append(pick);
   }
 
+  function invitationPhotoKey(el) {
+    if (!el) return '';
+    const known = new Set([
+      'heroPhoto', 'storyPhoto', 'venuePhoto',
+      'moodPhotoTable', 'moodPhotoCake', 'moodPhotoSetting', 'moodPhotoDrapery', 'moodPhotoCeremony'
+    ]);
+    if (el.id && known.has(el.id)) return el.id;
+    const nested = el.querySelector?.('img[id]');
+    if (nested?.id && known.has(nested.id)) return nested.id;
+    return '';
+  }
+
+  function clearInvitationPhoto(key) {
+    if (!key || typeof window.getInvitationEditorState !== 'function') return;
+    const data = window.getInvitationEditorState();
+    if (!data || typeof data !== 'object') return;
+    data[key] = '';
+    if (data.backgroundPhotos && typeof data.backgroundPhotos === 'object') {
+      for (const entry of Object.values(data.backgroundPhotos)) {
+        if (entry && typeof entry === 'object' && typeof entry.image === 'string') {
+          // leave section backgrounds alone unless explicitly edited here
+        }
+      }
+    }
+    if (typeof window.persistWeddingDraft === 'function') window.persistWeddingDraft();
+    if (typeof window.renderPhotos === 'function') window.renderPhotos();
+    if (typeof window.renderMoodPhotos === 'function') window.renderMoodPhotos();
+    if (typeof window.applyBackgroundPhotos === 'function') window.applyBackgroundPhotos();
+  }
+
+  function deleteSelectedPhoto() {
+    if (!target || !targetKey) {
+      notify('Tap a picture first.');
+      return;
+    }
+    if (!confirm('Delete this picture from the website?')) return;
+    history();
+    const rec = editingRecord(targetKey);
+    const photoKey = invitationPhotoKey(target);
+
+    if (target instanceof HTMLImageElement) {
+      rec.src = '';
+      target.removeAttribute('src');
+      target.hidden = true;
+    } else {
+      for (const scope of ['desktop', 'tablet', 'mobile']) {
+        const group = rec[scope];
+        if (!group) continue;
+        delete group['background-image'];
+        delete group['background-size'];
+        delete group['background-position'];
+      }
+      target.style.backgroundImage = '';
+      target.style.backgroundSize = '';
+      target.style.backgroundPosition = '';
+      const nestedImg = target.querySelector?.('img');
+      if (nestedImg) {
+        nestedImg.removeAttribute('src');
+        nestedImg.hidden = true;
+        const nestedKey = itemKey(nestedImg);
+        if (nestedKey) {
+          const nestedRec = editingRecord(nestedKey);
+          nestedRec.src = '';
+        }
+      }
+    }
+
+    if (photoKey) clearInvitationPhoto(photoKey);
+    saveDraft();
+    refreshVisual();
+    notify('Picture deleted ✓  Save to website when you are ready.');
+    renderPanel();
+  }
+
   function photoEditor(root) {
-    const curr = editingRecord(targetKey)[activeScope] || {};
     const canBg = target.matches('section,header,main,footer,div,article,figure,aside,img,.hero-image,.image-placeholder');
-    root.append(help('Pick a new picture from your phone or computer.'));
+    root.append(help('Pick a new picture from your phone or computer. You can also delete the current one.'));
     if (target instanceof HTMLImageElement) {
       field(root, 'Choose a picture', {
         type: 'file', accept: 'image/*', full: true, value: '',
@@ -475,12 +557,24 @@
           const file = input.files?.[0]; if (!file) return;
           try {
             const image = await compressPhoto(file);
-            history(); setValue(targetKey, 'src', image);
+            history();
+            target.hidden = false;
+            setValue(targetKey, 'src', image);
+            const photoKey = invitationPhotoKey(target);
+            if (photoKey && typeof window.getInvitationEditorState === 'function') {
+              const data = window.getInvitationEditorState();
+              data[photoKey] = image;
+              if (typeof window.persistWeddingDraft === 'function') window.persistWeddingDraft();
+              if (typeof window.renderMoodPhotos === 'function') window.renderMoodPhotos();
+              if (typeof window.renderPhotos === 'function') window.renderPhotos();
+            }
             notify('Picture changed ✓');
+            renderPanel();
           } catch { notify('Please use a normal photo (JPG or PNG).'); }
           input.value = '';
         }
       });
+      btn(root, '🗑  Delete this picture', deleteSelectedPhoto, 'be-warn be-full');
     } else if (canBg) {
       field(root, 'Choose a picture', {
         type: 'file', accept: 'image/*', full: true, value: '',
@@ -492,12 +586,20 @@
             setValue(targetKey, 'background-image', 'url("' + image + '")');
             setValue(targetKey, 'background-size', 'cover');
             setValue(targetKey, 'background-position', 'center');
+            const photoKey = invitationPhotoKey(target);
+            if (photoKey && typeof window.getInvitationEditorState === 'function') {
+              const data = window.getInvitationEditorState();
+              data[photoKey] = image;
+              if (typeof window.persistWeddingDraft === 'function') window.persistWeddingDraft();
+              if (typeof window.renderPhotos === 'function') window.renderPhotos();
+            }
             notify('Picture changed ✓');
             renderPanel();
           } catch { notify('Please use a normal photo (JPG or PNG).'); }
           input.value = '';
         }
       });
+      btn(root, '🗑  Delete this picture', deleteSelectedPhoto, 'be-warn be-full');
     } else {
       root.append(help('Tap a picture on the page first.'));
     }
@@ -639,29 +741,113 @@
     btn(tools, '↩️ Undo', () => restore(undo, redo)).disabled = !undo.length;
   }
 
+  function setSavingUi(on, message) {
+    saving = !!on;
+    document.body.classList.toggle('be-saving', saving);
+    let veil = $('be-saving-veil');
+    if (saving) {
+      if (!veil) {
+        veil = document.createElement('div');
+        veil.id = 'be-saving-veil';
+        veil.innerHTML = '<div class="be-saving-card"><div class="be-saving-spinner" aria-hidden="true"></div><strong>Saving…</strong><p id="be-saving-copy">Uploading your changes</p></div>';
+        document.body.append(veil);
+      }
+      const copy = $('be-saving-copy');
+      if (copy) copy.textContent = message || 'Uploading your changes';
+      veil.hidden = false;
+    } else if (veil) {
+      veil.hidden = true;
+    }
+    const saveBtn = document.querySelector('#be-export-actions .be-save');
+    if (saveBtn) {
+      saveBtn.disabled = saving;
+      saveBtn.textContent = saving ? '⏳ Saving…' : '💾 SAVE TO WEBSITE';
+    }
+  }
+
+  function adoptSavedConfig(config) {
+    if (!config || typeof config !== 'object') return;
+    const data = PAGE === 'index' && typeof window.getInvitationEditorState === 'function'
+      ? window.getInvitationEditorState()
+      : state;
+
+    // Keep one shared object up to date with everything that was saved.
+    Object.assign(data, config);
+    data.visualOverrides = config.visualOverrides || {};
+    data.visualOrder = config.visualOrder || {};
+    data.visualTypographyScopes = config.visualTypographyScopes || {};
+    data.designTheme = config.designTheme || data.designTheme || {};
+    data.visualTheme = config.visualTheme || config.designTheme || data.visualTheme || {};
+    data.styleOverrides = config.styleOverrides || {};
+    data.backgroundPhotos = config.backgroundPhotos || {};
+
+    state = data;
+    if (!state.visualOverrides) state.visualOverrides = {};
+    if (!state.visualOrder) state.visualOrder = {};
+    if (!state.visualTypographyScopes) state.visualTypographyScopes = {};
+    if (!state.designTheme) state.designTheme = {};
+    if (!state.visualTheme) state.visualTheme = {...state.designTheme};
+
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch { /* ignore quota */ }
+    if (typeof window.persistWeddingDraft === 'function') window.persistWeddingDraft();
+    if (typeof window.apply === 'function') window.apply();
+    else {
+      if (typeof window.applyDesign === 'function') window.applyDesign();
+      if (typeof window.applyBackgroundPhotos === 'function') window.applyBackgroundPhotos();
+      if (typeof window.renderPhotos === 'function') window.renderPhotos();
+      if (typeof window.renderMoodPhotos === 'function') window.renderMoodPhotos();
+    }
+    refreshVisual();
+  }
+
+  function readyForNextEdit() {
+    target = null;
+    targetKey = '';
+    activeTab = 'words';
+    picking = false;
+    document.body.classList.remove('be-studio-picking');
+    updateOutline();
+    renderPanel();
+    enableLiveSelect();
+  }
+
   async function publishLive() {
+    if (saving) return;
     if (!window.WeddingLive || typeof window.WeddingLive.publish !== 'function') {
       notify('The website server is not running. Ask your helper to start it.');
       return;
     }
     try {
-      notify('Saving to the website…');
+      setSavingUi(true, 'Gathering all your edits…');
+      notify('Saving all changes…');
       saveDraft();
+
       const liveState = PAGE === 'index' && typeof window.getInvitationEditorState === 'function'
         ? window.getInvitationEditorState()
         : state;
+
+      // Full snapshot so every edit (words, photos, colours, layout) is included.
       const publishState = {
         ...liveState,
         ...state,
-        designTheme: {...(state.designTheme || {}), ...(state.visualTheme || {})},
-        visualTheme: {...(state.visualTheme || {}), ...(state.designTheme || {})},
-        visualOverrides: state.visualOverrides,
-        visualOrder: state.visualOrder,
-        visualTypographyScopes: state.visualTypographyScopes
+        designTheme: {...(liveState.designTheme || {}), ...(state.designTheme || {}), ...(state.visualTheme || {})},
+        visualTheme: {...(liveState.visualTheme || {}), ...(state.visualTheme || {}), ...(state.designTheme || {})},
+        visualOverrides: state.visualOverrides || liveState.visualOverrides || {},
+        visualOrder: state.visualOrder || liveState.visualOrder || {},
+        visualTypographyScopes: state.visualTypographyScopes || liveState.visualTypographyScopes || {},
+        styleOverrides: liveState.styleOverrides || state.styleOverrides || {},
+        backgroundPhotos: liveState.backgroundPhotos || state.backgroundPhotos || {}
       };
-      await window.WeddingLive.publish(publishState);
-      notify('Saved ✓ Everyone can see your changes after they refresh.');
+
+      setSavingUi(true, 'Uploading photos & saving…');
+      const payload = await window.WeddingLive.publish(publishState);
+      const saved = payload?.config || publishState;
+      adoptSavedConfig(saved);
+      readyForNextEdit();
+      setSavingUi(false);
+      notify('Saved ✓ Tap the next thing to edit.');
     } catch (error) {
+      setSavingUi(false);
       notify(error.message || 'Could not save. Check the password and try again.');
     }
   }
@@ -735,7 +921,44 @@
     if (location.hash === '#visual-editor' || location.hash === '#edit') openStudio();
   }
 
-  function openStudio() {
+  let unlocked = false;
+  async function unlockEditor() {
+    if (unlocked) return true;
+    if (!window.WeddingLive) {
+      notify('Website server is not ready yet. Refresh and try again.');
+      return false;
+    }
+    let password = window.WeddingLive.getPassword?.() || '';
+    if (!password) {
+      password = prompt('Enter the editor password to edit this website:') || '';
+      if (!password) return false;
+    }
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Editor-Password': password
+        },
+        body: '{}'
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok || !payload.ok) {
+        window.WeddingLive.setPassword?.('');
+        notify(payload.error || 'Wrong password.');
+        return false;
+      }
+      window.WeddingLive.setPassword?.(password);
+      unlocked = true;
+      return true;
+    } catch {
+      notify('Could not check the password. Try again.');
+      return false;
+    }
+  }
+
+  async function openStudio() {
+    if (!(await unlockEditor())) return;
     document.body.classList.add('be-studio-open');
     enableLiveSelect();
     applyDevicePreview();
@@ -797,6 +1020,9 @@
   if (IS_OWNER) {
     document.body.classList.add('be-studio-owner', PAGE === 'moments' ? 'be-studio-moments' : 'be-studio-index');
     mount();
-    if (new URLSearchParams(location.search).get('edit') === '1') requestAnimationFrame(openStudio);
+    // Ask for password before opening the editor panel.
+    if (new URLSearchParams(location.search).get('edit') === '1') {
+      requestAnimationFrame(() => { openStudio(); });
+    }
   }
 })();

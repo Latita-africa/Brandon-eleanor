@@ -164,6 +164,10 @@ body.be-studio-open #be-studio-panel { display: block; }
   box-shadow: 0 8px 20px #1f6b4533;
 }
 #be-studio-panel button.be-save:hover { background: #185637; }
+#be-studio-panel button.be-full {
+  width: 100%;
+  margin-top: 10px;
+}
 #be-studio-panel button.be-warn {
   border-color: #c48b84;
   color: #8a3f3a;
@@ -405,6 +409,51 @@ body.be-studio-open #be-studio-launch { cursor: auto !important; }
   line-height: 1.4;
 }
 #be-studio-note[aria-live] { display: block; }
+
+#be-saving-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  background: rgba(10, 18, 36, 0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+#be-saving-veil[hidden] { display: none !important; }
+.be-saving-card {
+  background: #fffdf8;
+  color: #1a2a44;
+  border: 1px solid #d7c6a8;
+  border-radius: 18px;
+  padding: 28px 30px;
+  width: min(340px, 100%);
+  text-align: center;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+}
+.be-saving-card strong {
+  display: block;
+  font-size: 20px;
+  margin: 14px 0 6px;
+}
+.be-saving-card p {
+  margin: 0;
+  color: #5d6575;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.be-saving-spinner {
+  width: 42px;
+  height: 42px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: 3px solid #e6d9c4;
+  border-top-color: #c5a16a;
+  animation: be-spin 0.8s linear infinite;
+}
+@keyframes be-spin { to { transform: rotate(360deg); } }
+body.be-saving #be-studio-panel,
+body.be-saving #be-studio-launch { pointer-events: none; }
 
 body.be-studio-open.be-preview-mobile { background: #d9d2c5 !important; }
 body.be-studio-open.be-preview-mobile > header,
