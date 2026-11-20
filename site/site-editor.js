@@ -194,15 +194,16 @@
   if (!state.visualTheme || typeof state.visualTheme !== 'object') state.visualTheme = {...state.designTheme};
 
   let target = null, targetKey = '', picking = false, activeTab = 'words', activeScope = 'desktop';
-  let panel, outline, hoverOutline, sizeHandle, contentRoot, undo = [], redo = [], noteTimer = 0;
+  let panel, outline, hoverOutline, sizeHandle, moveHandle, contentRoot, undo = [], redo = [], noteTimer = 0;
   let saving = false;
   let sizeDrag = null;
+  let moveDrag = null;
   const $ = id => document.getElementById(id);
   const escapeSelector = s => (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/[^a-zA-Z0-9_-]/g, '\\$&');
   const recordMap = () => (state.visualOverrides[PAGE] ||= {});
   const editingRecord = key => (recordMap()[key] ||= { desktop: {}, mobile: {}, tablet: {} });
   const sectionHost = () => document.querySelector(PAGE === 'index' ? 'main' : 'main.hero');
-  const inEditor = node => !!node?.closest?.('#be-studio-panel,#be-studio-launch,#be-studio-note,#be-size-handle,#be-saving-veil,#editor,#backdrop,#editButton');
+  const inEditor = node => !!node?.closest?.('#be-studio-panel,#be-studio-launch,#be-studio-note,#be-size-handle,#be-move-handle,#be-saving-veil,#editor,#backdrop,#editButton');
   const belongsToPage = el => !!el?.closest?.('body > header,body > main,body > footer') && !inEditor(el);
   const NODE_SKIP = 'script,style,link,meta,noscript,template,svg,path,source,iframe,canvas';
 
@@ -315,9 +316,44 @@
       }
     }
   }
-  function parseTranslateX(value) {
-    const match = String(value || '').match(/translateX\(\s*(-?\d+(?:\.\d+)?)px\s*\)/i);
-    return match ? Number(match[1]) : 0;
+  function parseTranslate(value) {
+    const s = String(value || '');
+    const both = s.match(/translate\(\s*(-?\d+(?:\.\d+)?)px\s*,\s*(-?\d+(?:\.\d+)?)px\s*\)/i);
+    if (both) return { x: Number(both[1]), y: Number(both[2]) };
+    const xOnly = s.match(/translateX\(\s*(-?\d+(?:\.\d+)?)px\s*\)/i);
+    const yOnly = s.match(/translateY\(\s*(-?\d+(?:\.\d+)?)px\s*\)/i);
+    return { x: xOnly ? Number(xOnly[1]) : 0, y: yOnly ? Number(yOnly[1]) : 0 };
+  }
+  function formatTranslate(x, y) {
+    const nx = Math.round(Math.min(480, Math.max(-480, Number(x) || 0)));
+    const ny = Math.round(Math.min(480, Math.max(-480, Number(y) || 0)));
+    if (!nx && !ny) return '';
+    return 'translate(' + nx + 'px, ' + ny + 'px)';
+  }
+  function currentTranslate() {
+    const curr = editingRecord(targetKey)?.[activeScope] || {};
+    return parseTranslate(curr.transform || (target && target.style.transform) || '');
+  }
+  function setTransformPosition(x, y, { commit = false, recordHistory = false } = {}) {
+    if (!target || !targetKey) return currentTranslate();
+    const value = formatTranslate(x, y);
+    if (recordHistory) history();
+    if (commit) {
+      target.style.removeProperty('transform');
+      setValue(targetKey, 'transform', value);
+    } else {
+      target.style.setProperty('transform', value || 'none', 'important');
+      updateOutline();
+    }
+    const label = $('be-shift-label');
+    if (label) {
+      const pos = parseTranslate(value);
+      label.textContent = (!pos.x && !pos.y)
+        ? 'In place'
+        : ('X ' + pos.x + 'px · Y ' + pos.y + 'px');
+    }
+    if (moveHandle) moveHandle.dataset.pos = (!x && !y) ? 'move' : (Math.round(x) + ',' + Math.round(y));
+    return parseTranslate(value);
   }
   function currentLetterSpacing(el) {
     const stored = editingRecord(targetKey)?.[activeScope]?.['letter-spacing'];
@@ -339,16 +375,11 @@
     if (range) range.value = String(size);
     return size;
   }
-  function applyTextShift(deltaPx) {
+  function applyTextShift(dx, dy = 0) {
     if (!target || !targetKey) return;
-    history();
-    const curr = editingRecord(targetKey)[activeScope] || {};
-    const next = Math.round(Math.min(240, Math.max(-240, parseTranslateX(curr.transform) + deltaPx)));
-    if (next === 0) setValue(targetKey, 'transform', '');
-    else setValue(targetKey, 'transform', 'translateX(' + next + 'px)');
-    const label = $('be-shift-label');
-    if (label) label.textContent = (next === 0 ? 'Centre line' : (next > 0 ? 'Right ' + next + 'px' : 'Left ' + Math.abs(next) + 'px'));
-    notify(next === 0 ? 'Back to centre ✓' : (next > 0 ? 'Moved right ✓' : 'Moved left ✓'));
+    const pos = currentTranslate();
+    const next = setTransformPosition(pos.x + dx, pos.y + dy, { commit: true, recordHistory: true });
+    notify((!next.x && !next.y) ? 'Back in place ✓' : 'Moved ✓');
   }
   function themeSheet() {
     const theme = {...(state.designTheme || {}), ...(state.visualTheme || {})};
@@ -478,11 +509,24 @@
     sizeHandle.dataset.size = Math.round(currentFontPx(el)) + 'px';
     sizeHandle.title = 'Drag to make text bigger or smaller';
   }
+  function placeMoveHandle(el) {
+    if (!moveHandle) return;
+    const show = !!(el && document.contains(el) && canDragResize(el) && (document.body.classList.contains('be-studio-open') || picking));
+    if (!show) { moveHandle.style.display = 'none'; return; }
+    const rect = el.getBoundingClientRect();
+    const pos = currentTranslate();
+    moveHandle.style.display = 'flex';
+    moveHandle.style.top = Math.max(8, rect.top - 18) + 'px';
+    moveHandle.style.left = (rect.left + rect.width / 2 - 18) + 'px';
+    moveHandle.dataset.pos = (!pos.x && !pos.y) ? 'drag' : (pos.x + ',' + pos.y);
+    moveHandle.title = 'Drag to move this text anywhere';
+  }
   function updateOutline() {
     if (!target || !document.contains(target)) target = resolve(targetKey);
     const active = document.body.classList.contains('be-studio-open') || picking ? target : null;
     placeOutline(outline, active);
     placeSizeHandle(active);
+    placeMoveHandle(active);
   }
   function isLiveSelectActive() {
     return IS_OWNER && (picking || document.body.classList.contains('be-studio-open') || document.body.classList.contains('be-studio-picking'));
@@ -739,23 +783,25 @@
 
     const shift = document.createElement('div');
     shift.className = 'be-field be-full';
-    shift.innerHTML = '<label>Move the words</label>';
-    const shiftRow = document.createElement('div');
-    shiftRow.className = 'be-size-nudge';
-    btn(shiftRow, '← Move left', () => applyTextShift(-16), 'be-choice');
-    btn(shiftRow, 'Move right →', () => applyTextShift(16), 'be-choice');
-    shift.append(shiftRow);
+    shift.innerHTML = '<label>Move the words (or drag the ✥ handle on the page)</label>';
+    const pad = document.createElement('div');
+    pad.className = 'be-move-pad';
+    btn(pad, '↑', () => applyTextShift(0, -16), 'be-choice be-move-up');
+    btn(pad, '←', () => applyTextShift(-16, 0), 'be-choice be-move-left');
+    btn(pad, '→', () => applyTextShift(16, 0), 'be-choice be-move-right');
+    btn(pad, '↓', () => applyTextShift(0, 16), 'be-choice be-move-down');
+    shift.append(pad);
     const shiftLabel = document.createElement('strong');
     shiftLabel.id = 'be-shift-label';
-    const shiftNow = parseTranslateX(curr.transform);
-    shiftLabel.textContent = shiftNow === 0 ? 'Centre line' : (shiftNow > 0 ? 'Right ' + shiftNow + 'px' : 'Left ' + Math.abs(shiftNow) + 'px');
+    const shiftNow = parseTranslate(curr.transform);
+    shiftLabel.textContent = (!shiftNow.x && !shiftNow.y)
+      ? 'In place'
+      : ('X ' + shiftNow.x + 'px · Y ' + shiftNow.y + 'px');
     shiftLabel.style.display = 'block';
     shiftLabel.style.marginTop = '8px';
     shift.append(shiftLabel);
     btn(shift, 'Reset position', () => {
-      history();
-      setValue(targetKey, 'transform', '');
-      shiftLabel.textContent = 'Centre line';
+      setTransformPosition(0, 0, { commit: true, recordHistory: true });
       notify('Position reset ✓');
     }, 'be-warn be-full');
     root.append(shift);
@@ -1253,6 +1299,38 @@
       notify('Drag to resize — up/right = bigger, down/left = smaller');
     });
 
+    moveHandle = document.createElement('button');
+    moveHandle.type = 'button';
+    moveHandle.id = 'be-move-handle';
+    moveHandle.setAttribute('aria-label', 'Drag to move text');
+    moveHandle.innerHTML = '<span>✥</span>';
+    document.body.append(moveHandle);
+    const beginMoveDrag = event => {
+      if (!target || !canDragResize(target) || sizeDrag) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const pos = currentTranslate();
+      history();
+      moveDrag = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        originX: pos.x,
+        originY: pos.y
+      };
+      moveHandle.classList.add('be-dragging');
+      outline?.classList.add('be-dragging-move');
+      document.body.classList.add('be-moving-text');
+      moveHandle.setPointerCapture?.(event.pointerId);
+      notify('Drag anywhere — left, right, up, down');
+    };
+    moveHandle.addEventListener('pointerdown', beginMoveDrag);
+    // Also allow dragging from the selection box itself (CMS-style).
+    outline.addEventListener('pointerdown', event => {
+      if (event.target === sizeHandle || event.target === moveHandle) return;
+      beginMoveDrag(event);
+    });
+
     const note = document.createElement('div');
     note.id = 'be-studio-note';
     document.body.append(note);
@@ -1354,17 +1432,30 @@
   function closeStudio() {
     picking = false;
     sizeDrag = null;
-    document.body.classList.remove('be-studio-open', 'be-studio-picking', 'be-preview-desktop', 'be-preview-tablet', 'be-preview-mobile');
+    moveDrag = null;
+    document.body.classList.remove('be-studio-open', 'be-studio-picking', 'be-preview-desktop', 'be-preview-tablet', 'be-preview-mobile', 'be-moving-text');
     document.documentElement.style.removeProperty('--be-preview-width');
     if (hoverOutline) hoverOutline.style.display = 'none';
     if (sizeHandle) {
       sizeHandle.classList.remove('be-dragging');
       sizeHandle.style.display = 'none';
     }
+    if (moveHandle) {
+      moveHandle.classList.remove('be-dragging');
+      moveHandle.style.display = 'none';
+    }
+    outline?.classList.remove('be-dragging-move');
     updateOutline();
   }
 
   function onSizePointerMove(event) {
+    if (moveDrag && event.pointerId === moveDrag.pointerId) {
+      event.preventDefault();
+      const x = moveDrag.originX + (event.clientX - moveDrag.startX);
+      const y = moveDrag.originY + (event.clientY - moveDrag.startY);
+      setTransformPosition(x, y, { commit: false });
+      return;
+    }
     if (!sizeDrag || event.pointerId !== sizeDrag.pointerId) return;
     event.preventDefault();
     const delta = (event.clientX - sizeDrag.startX) + (sizeDrag.startY - event.clientY);
@@ -1372,6 +1463,17 @@
     applyFontSize(next);
   }
   function onSizePointerUp(event) {
+    if (moveDrag && event.pointerId === moveDrag.pointerId) {
+      const x = moveDrag.originX + (event.clientX - moveDrag.startX);
+      const y = moveDrag.originY + (event.clientY - moveDrag.startY);
+      const finalPos = setTransformPosition(x, y, { commit: true });
+      moveDrag = null;
+      moveHandle?.classList.remove('be-dragging');
+      outline?.classList.remove('be-dragging-move');
+      document.body.classList.remove('be-moving-text');
+      notify((!finalPos.x && !finalPos.y) ? 'Back in place ✓' : 'Moved ✓  Save when you are ready.');
+      return;
+    }
     if (!sizeDrag || event.pointerId !== sizeDrag.pointerId) return;
     const finalSize = applyFontSize(currentFontPx(target));
     sizeDrag = null;
@@ -1383,7 +1485,7 @@
   window.addEventListener('pointercancel', onSizePointerUp);
 
   document.addEventListener('click', event => {
-    if (sizeDrag) return;
+    if (sizeDrag || moveDrag) return;
     if (!isLiveSelectActive()) return;
     const el = event.target instanceof Element ? event.target : null;
     if (!el || inEditor(el)) return;
