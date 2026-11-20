@@ -1,0 +1,90 @@
+[
+  {
+    "file": "images/heroPhoto.webp",
+    "width": 1448,
+    "height": 1086,
+    "bytes": 186758,
+    "sha256": "5eb23311e80082aabd75a7dd24deb4e98130552aa1274482cdbea24e6a1ab0a3",
+    "pages": [
+      "index.html",
+      "moments.html"
+    ]
+  },
+  {
+    "file": "images/venuePhoto.webp",
+    "width": 1440,
+    "height": 844,
+    "bytes": 145928,
+    "sha256": "3c5e4e6052d9b94de95d397e947266fba2d0d9b037df8211df397d38562da277",
+    "pages": [
+      "index.html",
+      "moments.html"
+    ]
+  },
+  {
+    "file": "images/moodPhotoTable.webp",
+    "width": 1200,
+    "height": 900,
+    "bytes": 141602,
+    "sha256": "21e35a9b4ff0c4c3bc7d25420d249051f5628a922b86732c11752d8cfc41948d",
+    "pages": [
+      "index.html",
+      "moments.html"
+    ]
+  },
+  {
+    "file": "images/moodPhotoCake.webp",
+    "width": 1112,
+    "height": 1200,
+    "bytes": 110018,
+    "sha256": "f2f08a617835c38864c6980d56f00cd04909333f31d19cf55391f9b4d967ea70",
+    "pages": [
+      "index.html",
+      "moments.html"
+    ]
+  },
+  {
+    "file": "images/moodPhotoSetting.webp",
+    "width": 1200,
+    "height": 1200,
+    "bytes": 145814,
+    "sha256": "7385ad7cae0151cac123d69a5b090909a3d009f0086b04a008d3252611b7020d",
+    "pages": [
+      "index.html",
+      "moments.html"
+    ]
+  },
+  {
+    "file": "images/moodPhotoDrapery.webp",
+    "width": 1026,
+    "height": 1200,
+    "bytes": 79066,
+    "sha256": "66b8417373108c574a2309f8cc39c20f2d3ea1a403ec9dee149ae30492b0e704",
+    "pages": [
+      "index.html",
+      "moments.html"
+    ]
+  },
+  {
+    "file": "images/moodPhotoCeremony.webp",
+    "width": 900,
+    "height": 1200,
+    "bytes": 187892,
+    "sha256": "4366d046fea7cd8b6ed7b988252c56d3e7c46f8b93f6cffdf96f59efe2711541",
+    "pages": [
+      "index.html",
+      "moments.html"
+    ]
+  },
+  {
+    "file": "images/embedded-5928cef087.webp",
+    "width": 1086,
+    "height": 1448,
+    "bytes": 134196,
+    "sha256": "5928cef087c9191ae0a41a8bc5813b8be1f68ce7a60d1178c2dd8dd7097f5e75",
+    "pages": [
+      "index.html",
+      "moments.html"
+    ]
+  }
+]

@@ -1,0 +1,283 @@
+/* Brandon & Eleanor — true mobile layout + editor Phone preview mirror */
+
+/* ===== Tablet / small laptop / phones ===== */
+@media (max-width: 900px) {
+  .header {
+    height: 70px;
+    padding: 0 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .brand {
+    font-size: 24px !important;
+    letter-spacing: .06em;
+    writing-mode: horizontal-tb !important;
+    transform: none !important;
+  }
+  .mobile-toggle {
+    display: block !important;
+    border: 0;
+    background: transparent;
+    color: #fff9eb;
+    font-size: 28px;
+    line-height: 1;
+    padding: 8px;
+    z-index: 2;
+  }
+  .nav {
+    display: none;
+    position: absolute;
+    top: 70px;
+    left: 0;
+    right: 0;
+    background: #101b37f5;
+    padding: 22px 20px 28px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    border-bottom: 1px solid #d8b87b45;
+  }
+  .nav.open { display: flex; }
+  .nav a {
+    font-size: 12px !important;
+    padding: 14px 6px;
+    border-bottom: 1px solid #ffffff14;
+    letter-spacing: .14em;
+  }
+  .nav .nav-rsvp {
+    margin-top: 14px;
+    text-align: center;
+    border: 1px solid #c7a66c !important;
+    padding: 14px 18px !important;
+  }
+
+  .hero {
+    height: 100svh;
+    min-height: 640px;
+    max-height: none;
+  }
+  .hero:before { inset: 14px; }
+  .hero:after { inset: 22px; }
+  .hero-content {
+    padding: 110px 22px 120px !important;
+    max-width: 100%;
+    width: 100%;
+  }
+  .vertical-copy { display: none !important; }
+  .hero-footer { display: none; }
+
+  .hero-monogram { font-size: 20px; gap: 12px; }
+  .hero-monogram:before,
+  .hero-monogram:after { width: 22px; }
+  .hero-eyebrow {
+    font-size: 10px !important;
+    letter-spacing: .28em !important;
+    max-width: 100%;
+  }
+  .hero h1,
+  #heroNames {
+    font-size: clamp(48px, 13vw, 78px) !important;
+    line-height: .92 !important;
+    letter-spacing: -.04em !important;
+    margin: 22px auto 20px !important;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .02em;
+  }
+  .hero h1 .amp,
+  #heroNames .amp {
+    font-size: .55em !important;
+    margin: .08em 0;
+  }
+  .hero-date {
+    font-size: 11px !important;
+    letter-spacing: .14em !important;
+    line-height: 1.6 !important;
+    padding: 0 8px;
+    margin-bottom: 28px !important;
+  }
+  .hero .btn,
+  .hero .btn-light {
+    width: min(100%, 280px);
+    margin: 0 auto;
+    display: inline-flex;
+  }
+
+  .intro { grid-template-columns: 1fr !important; gap: 48px !important; }
+  .feature-grid { grid-template-columns: 1fr !important; }
+  .details-grid { grid-template-columns: 1fr !important; }
+  .faq-layout { grid-template-columns: 1fr !important; gap: 28px !important; }
+}
+
+@media (max-width: 600px) {
+  .section { padding: 72px 20px; }
+  .header { height: 64px; padding: 0 14px; }
+  .nav { top: 64px; }
+  .brand { font-size: 22px !important; }
+
+  .hero {
+    height: 100svh;
+    min-height: 580px;
+  }
+  .hero-content { padding: 96px 18px 108px !important; }
+  .hero h1,
+  #heroNames {
+    font-size: clamp(44px, 14vw, 64px) !important;
+    line-height: .94 !important;
+  }
+  .hero-eyebrow { font-size: 9px !important; letter-spacing: .22em !important; }
+  .hero-date {
+    font-size: 10px !important;
+    letter-spacing: .12em !important;
+  }
+  .intro-copy h2 { font-size: clamp(42px, 11vw, 64px) !important; }
+  .countdown { gap: 10px; }
+  .countdown strong { font-size: 40px !important; }
+  .look-grid {
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-rows: 240px 200px 200px !important;
+  }
+  .rsvp { padding: 72px 18px; }
+  .rsvp h2 { font-size: clamp(48px, 14vw, 72px) !important; }
+}
+
+/*
+ * Editor "Phone" preview shrinks the page to ~390px, but the browser viewport
+ * stays desktop-wide — so @media queries never fire. Mirror mobile layout here.
+ */
+body.be-preview-mobile .header {
+  height: 64px !important;
+  padding: 0 14px !important;
+  position: sticky !important;
+  top: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+body.be-preview-mobile .brand {
+  font-size: 22px !important;
+  writing-mode: horizontal-tb !important;
+}
+body.be-preview-mobile .mobile-toggle {
+  display: block !important;
+  border: 0;
+  background: transparent;
+  color: #fff9eb;
+  font-size: 28px;
+  padding: 8px;
+}
+body.be-preview-mobile .nav {
+  display: none;
+  position: absolute;
+  top: 64px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: #101b37f5;
+  padding: 18px 16px 24px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  z-index: 20;
+}
+body.be-preview-mobile .nav.open { display: flex; }
+body.be-preview-mobile .nav a {
+  font-size: 12px !important;
+  padding: 14px 4px;
+  border-bottom: 1px solid #ffffff14;
+}
+body.be-preview-mobile .nav .nav-rsvp {
+  margin-top: 12px;
+  text-align: center;
+  border: 1px solid #c7a66c !important;
+  padding: 14px !important;
+}
+
+body.be-preview-mobile .hero {
+  height: auto !important;
+  min-height: 640px !important;
+  max-height: none !important;
+}
+body.be-preview-mobile .hero:before { inset: 12px; }
+body.be-preview-mobile .hero:after { inset: 20px; }
+body.be-preview-mobile .hero-content {
+  padding: 96px 16px 100px !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+body.be-preview-mobile .vertical-copy,
+body.be-preview-mobile .hero-footer { display: none !important; }
+body.be-preview-mobile .hero-monogram { font-size: 18px; }
+body.be-preview-mobile .hero-eyebrow {
+  font-size: 9px !important;
+  letter-spacing: .2em !important;
+}
+body.be-preview-mobile .hero h1,
+body.be-preview-mobile #heroNames {
+  font-size: 52px !important;
+  line-height: .94 !important;
+  margin: 18px auto 16px !important;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .02em;
+}
+body.be-preview-mobile .hero h1 .amp,
+body.be-preview-mobile #heroNames .amp {
+  font-size: .55em !important;
+  margin: .06em 0;
+}
+body.be-preview-mobile .hero-date {
+  font-size: 10px !important;
+  letter-spacing: .1em !important;
+  line-height: 1.55 !important;
+  margin-bottom: 22px !important;
+}
+body.be-preview-mobile .hero .btn,
+body.be-preview-mobile .hero .btn-light {
+  width: min(100%, 260px);
+  margin: 0 auto;
+}
+
+body.be-preview-mobile .section { padding: 64px 18px !important; }
+body.be-preview-mobile .intro { grid-template-columns: 1fr !important; gap: 40px !important; }
+body.be-preview-mobile .intro-copy h2 { font-size: 48px !important; }
+body.be-preview-mobile .feature-grid,
+body.be-preview-mobile .details-grid,
+body.be-preview-mobile .faq-layout { grid-template-columns: 1fr !important; }
+body.be-preview-mobile .look-grid {
+  grid-template-columns: 1fr 1fr !important;
+  grid-template-rows: 220px 180px 180px !important;
+}
+body.be-preview-mobile .look-photo.main { grid-row: 1 / 3; grid-column: 1; }
+body.be-preview-mobile .look-photo.cake { grid-column: 2; grid-row: 1; }
+body.be-preview-mobile .look-photo.tableset { grid-column: 2; grid-row: 2; }
+body.be-preview-mobile .look-photo.drape { grid-column: 1; grid-row: 3; }
+body.be-preview-mobile .look-photo.ceremony { grid-column: 2; grid-row: 3; }
+body.be-preview-mobile .countdown { gap: 8px; }
+body.be-preview-mobile .countdown strong { font-size: 36px !important; }
+body.be-preview-mobile .rsvp { padding: 64px 16px !important; }
+body.be-preview-mobile .rsvp h2 { font-size: 56px !important; }
+body.be-preview-mobile .timeline:before { left: 8px; }
+body.be-preview-mobile .timeline-item {
+  grid-template-columns: 16px 1fr !important;
+  gap: 14px !important;
+}
+body.be-preview-mobile .timeline-dot { grid-column: 1 !important; grid-row: 1 !important; }
+body.be-preview-mobile .timeline-time,
+body.be-preview-mobile .timeline-item:nth-child(even) .timeline-time {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  text-align: left !important;
+}
+body.be-preview-mobile .timeline-event,
+body.be-preview-mobile .timeline-item:nth-child(even) .timeline-event {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  text-align: left !important;
+}
