@@ -629,7 +629,7 @@
     let el = raw.matches(NODE_SKIP) ? raw.parentElement : raw;
     if (!el || inEditor(el)) return null;
 
-    const blocked = el.closest?.('#wixRsvpFields,#photoFormFields,#wixPhotoUploadForm,#guestSearchResults');
+    const blocked = el.closest?.('#wixRsvpFields,#photoFormFields,#wixPhotoUploadForm,#guestSearchResults,#calendarSheet,.cal-sheet-backdrop');
     if (blocked && el.matches?.('input,select,textarea,button[type="submit"]')) return null;
 
     // Hero pieces first — keep & / names / date / monogram independently editable.
