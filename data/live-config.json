@@ -87,11 +87,11 @@
   },
   "styleOverrides": {
     "id:heroNames": {
-      "fontFamily": "Italiana, Georgia, serif",
+      "fontFamily": "Cormorant Garamond, Georgia, serif",
       "letterSpacing": "-0.8"
     },
     "edit:storyTitle": {
-      "fontFamily": "Italiana, Georgia, serif",
+      "fontFamily": "Cormorant Garamond, Georgia, serif",
       "weight": "",
       "align": "center",
       "letterSpacing": "-3.2",
@@ -116,91 +116,91 @@
       "weight": "700"
     },
     "edit:countdownTitle": {
-      "fontFamily": "Italiana, Georgia, serif"
+      "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "edit:timelineEyebrow": {
-      "fontFamily": "Italiana, Georgia, serif",
+      "fontFamily": "Cormorant Garamond, Georgia, serif",
       "fontSize": "18"
     },
     "edit:timelineTitle": {
-      "fontFamily": "Italiana, Georgia, serif",
+      "fontFamily": "Cormorant Garamond, Georgia, serif",
       "align": "center"
     },
     "edit:venueEyebrow": {
-      "fontFamily": "Italiana, Georgia, serif",
+      "fontFamily": "Cormorant Garamond, Georgia, serif",
       "fontSize": "18"
     },
     "edit:timelineIntro": {
-      "fontFamily": "Italiana, Georgia, serif"
+      "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "edit:venueTitle": {
-      "fontFamily": "Italiana, Georgia, serif"
+      "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "edit:detailsTitle": {
-      "fontFamily": "Italiana, Georgia, serif"
+      "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "edit:dressTitle": {
-      "fontFamily": "Italiana, Georgia, serif"
+      "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "edit:unpluggedTitle": {
-      "fontFamily": "Italiana, Georgia, serif"
+      "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "edit:giftsTitle": {
-      "fontFamily": "Italiana, Georgia, serif"
+      "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "edit:giftsText": {
-      "fontFamily": "Italiana, Georgia, serif",
+      "fontFamily": "Cormorant Garamond, Georgia, serif",
       "fontSize": "17",
       "color": "#000000"
     },
     "id:footerNames": {
-      "fontFamily": "Italiana, Georgia, serif"
+      "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "edit:unpluggedText": {
-      "fontFamily": "Italiana, Georgia, serif",
+      "fontFamily": "Cormorant Garamond, Georgia, serif",
       "fontSize": "17",
       "color": "#000000"
     },
     "edit:photoLinkNote": {
-      "fontFamily": "Italiana, Georgia, serif"
+      "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "edit:dressText": {
-      "fontFamily": "Italiana, Georgia, serif",
+      "fontFamily": "Cormorant Garamond, Georgia, serif",
       "fontSize": "17",
       "color": "#000000"
     },
     "edit:navRSVP": {
-      "fontFamily": "Italiana, Georgia, serif"
+      "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "edit:directionsButton": {
-      "fontFamily": "Italiana, Georgia, serif"
+      "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "edit:rsvpEyebrow": {
-      "fontFamily": "Italiana, Georgia, serif",
+      "fontFamily": "Cormorant Garamond, Georgia, serif",
       "fontSize": "10"
     },
     "edit:rsvpTitle": {
       "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "edit:rsvpText": {
-      "fontFamily": "Italiana, Georgia, serif",
+      "fontFamily": "Cormorant Garamond, Georgia, serif",
       "fontSize": "15"
     },
     "edit:venueDescription": {
-      "fontFamily": "Italiana, Georgia, serif"
+      "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "edit:heroEyebrow": {
       "fontSize": "23",
       "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "edit:navVenue": {
-      "fontFamily": "Italiana, Georgia, serif"
+      "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "id:brand": {
-      "fontFamily": "Italiana, Georgia, serif"
+      "fontFamily": "Cormorant Garamond, Georgia, serif"
     },
     "id:venueAddress": {
-      "fontFamily": "Italiana, Georgia, serif",
+      "fontFamily": "Cormorant Garamond, Georgia, serif",
       "fontSize": "17"
     }
   },
@@ -292,37 +292,26 @@
   "visualOverrides": {
     "index": {
       "#heroFirst": {
-        "desktop": {
-          "font-family": "\"Pinyon Script\", Georgia, serif"
-        },
         "mobile": {},
         "tablet": {}
       },
       "#heroSecond": {
-        "desktop": {
-          "font-family": "\"Pinyon Script\", Georgia, serif"
-        },
         "mobile": {},
         "tablet": {}
       },
       "#brand > span:nth-of-type(1)": {
         "desktop": {},
         "mobile": {
-          "font-family": "\"Prata\", Georgia, serif",
           "font-size": "16"
         },
         "tablet": {}
       },
       "#heroNames > span:nth-of-type(2)": {
-        "desktop": {
-          "font-family": "\"Great Vibes\", Georgia, serif"
-        },
         "mobile": {},
         "tablet": {}
       },
       "[data-be-section=\"s01\"] > div:nth-of-type(2) > div:nth-of-type(1)": {
         "desktop": {
-          "font-family": "\"Playfair Display\", Georgia, serif",
           "font-size": "38"
         },
         "mobile": {
@@ -346,9 +335,6 @@
         "tablet": {}
       },
       "body:nth-of-type(1) > header:nth-of-type(1)": {
-        "desktop": {
-          "font-family": "\"Libre Baskerville\", Georgia, serif"
-        },
         "mobile": {},
         "tablet": {}
       },
@@ -395,7 +381,6 @@
       "[data-edit=\"storyTitle\"]": {
         "desktop": {},
         "mobile": {
-          "font-family": "\"EB Garamond\", Georgia, serif",
           "font-size": "30",
           "font-stretch": "50",
           "letter-spacing": "0.4"
@@ -422,14 +407,12 @@
     },
     "headings": {
       "all": {
-        "desktop": {
-          "font-family": "\"Tiro Devanagari Sanskrit\", Georgia, serif"
-        },
+        "desktop": {},
         "tablet": {},
         "mobile": {}
       }
     }
   },
   "visualTheme": {},
-  "updatedAt": "2026-11-20T07:02:41.984Z"
+  "updatedAt": "2026-11-20T08:00:43.357Z"
 }

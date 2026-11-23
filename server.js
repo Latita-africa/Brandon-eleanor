@@ -10,7 +10,7 @@ require('dotenv').config();
 
 const {
   passwordOk,
-  mergeDeep,
+  mergePublishedConfig,
   materializeImages,
   parseDataUrl,
   uploadImageBuffer,
@@ -31,6 +31,11 @@ app.use(express.json({ limit: '12mb' }));
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, mode: process.env.BLOB_READ_WRITE_TOKEN ? 'vercel-blob' : 'local-file', editable: true });
+});
+
+app.post('/api/auth', (req, res) => {
+  if (!passwordOk(req)) return res.status(401).json({ ok: false, error: 'Wrong editor password.' });
+  res.json({ ok: true });
 });
 
 app.get('/api/content', async (_req, res) => {
@@ -56,11 +61,16 @@ app.post('/api/content', async (req, res) => {
     if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
       return res.status(400).json({ ok: false, error: 'Expected a JSON object.' });
     }
-    const merged = mergeDeep(await readConfig(), req.body);
+    const merged = mergePublishedConfig(await readConfig(), req.body);
     const cleaned = await materializeImages(merged, 'live');
     cleaned.updatedAt = new Date().toISOString();
     await writeConfig(cleaned);
-    res.json({ ok: true, updatedAt: cleaned.updatedAt, storage: process.env.BLOB_READ_WRITE_TOKEN ? 'vercel-blob' : 'local-file' });
+    res.json({
+      ok: true,
+      updatedAt: cleaned.updatedAt,
+      storage: process.env.BLOB_READ_WRITE_TOKEN ? 'vercel-blob' : 'local-file',
+      config: cleaned
+    });
   } catch (error) {
     res.status(500).json({ ok: false, error: error.message || 'Save failed' });
   }

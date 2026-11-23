@@ -1,6 +1,6 @@
 'use strict';
 
-const { passwordOk, mergeDeep, materializeImages, readConfig, writeConfig } = require('../lib/content');
+const { passwordOk, mergePublishedConfig, materializeImages, readConfig, writeConfig } = require('../lib/content');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -22,11 +22,16 @@ module.exports = async function handler(req, res) {
       if (!body || typeof body !== 'object' || Array.isArray(body)) {
         return res.status(400).json({ ok: false, error: 'Expected a JSON object.' });
       }
-      const merged = mergeDeep(await readConfig(), body);
+      const merged = mergePublishedConfig(await readConfig(), body);
       const cleaned = await materializeImages(merged, 'live');
       cleaned.updatedAt = new Date().toISOString();
       await writeConfig(cleaned);
-      return res.status(200).json({ ok: true, updatedAt: cleaned.updatedAt, storage: process.env.BLOB_READ_WRITE_TOKEN ? 'vercel-blob' : 'local-file' });
+      return res.status(200).json({
+        ok: true,
+        updatedAt: cleaned.updatedAt,
+        storage: process.env.BLOB_READ_WRITE_TOKEN ? 'vercel-blob' : 'local-file',
+        config: cleaned
+      });
     }
 
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
