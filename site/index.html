@@ -20,7 +20,7 @@ h2{font-family:var(--serif);font-weight:400;letter-spacing:-.028em;line-height:.
 .btn-outline{background:transparent;color:#f3e6cf;border:1px solid #bd9b6d}
 .header{position:fixed;top:0;left:0;right:0;z-index:100;height:83px;border-bottom:1px solid transparent;padding:0 5.5vw;background:linear-gradient(180deg,#071027a6,transparent);backdrop-filter:blur(0);-webkit-backdrop-filter:blur(0);color:#fff9eb;box-shadow:none;transition:background .28s ease,border-color .28s ease,box-shadow .28s ease,backdrop-filter .28s ease}
 .header.is-scrolled{background:rgba(13,24,50,.92);border-bottom-color:#d8b87b45;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 8px 24px #07102733}
-.brand{font-family:var(--serif);font-size:30px;letter-spacing:.08em;font-weight:500}
+.brand{font-family:var(--serif);font-size:clamp(26px,2.4vw,32px);letter-spacing:.06em;font-weight:500;line-height:1}
 .brand span{color:var(--gold)}.nav{gap:27px}.nav a{font-size:10px;letter-spacing:.17em;color:#f5eedf}.nav a:hover{color:#d6b678;opacity:1}.nav .nav-rsvp{color:#efdcba;border:1px solid #c7a66c;padding:12px 20px}
 .cal-sheet-backdrop{position:fixed;inset:0;z-index:2147482000;background:#07102799;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:none!important;align-items:flex-end;justify-content:center;padding:18px;visibility:hidden;pointer-events:none}
 .cal-sheet-backdrop.on{display:flex!important;visibility:visible;pointer-events:auto}
@@ -288,7 +288,7 @@ html,body{max-width:100%;overflow-x:clip}
 #rsvpForm .guest-result .guest-result-details{display:flex;flex-direction:column;gap:5px;text-align:left}
 #rsvpForm .guest-result .guest-family-name{font:400 12px/1.3 'Cormorant Garamond',Georgia,serif;color:#7c6545}
 @media(max-width:600px){.household-choices{grid-template-columns:1fr}.household-member{padding:21px 15px}.household-member-head{align-items:flex-start}.household-member-name{font-size:28px}}
-</style><link rel="stylesheet" href="/mobile.css?v=20261124-center-v3"><link rel="stylesheet" href="/site-editor.css?v=20261124-center-v3">
+</style><link rel="stylesheet" href="/mobile.css?v=20261124-brand-v2"><link rel="stylesheet" href="/site-editor.css?v=20261124-brand-v2">
 <script id="wix-site-script" src="https://manage.wix.com/_api/headless-business-setup/v1/headless-business/site-script.js" data-client-id="2cd54a2c-c5e2-41f6-8e05-c3fb506c8c3a" async></script></head><body>
 <header class="header"><a class="brand" href="#home" id="brand">B <span>&amp;</span> E</a><nav class="nav" id="nav"><a data-edit="navStory" href="#story">Our Story</a><a data-edit="navProgramme" href="#programme">The Day</a><a data-edit="navVenue" href="#venue">The Venue</a><a data-edit="navDetails" href="#details">Details</a><a class="nav-rsvp" data-edit="navRSVP" href="#rsvp">RSVP</a></nav><button aria-label="Open navigation" class="mobile-toggle" id="mobileToggle">☰</button></header>
 <div aria-hidden="true" class="cal-sheet-backdrop" hidden id="calendarSheet"><div aria-label="Add wedding to calendar" class="cal-sheet" role="dialog"><h3>Save the date</h3><p id="calendarSheetCopy">Add Brandon &amp; Eleanor’s wedding to your phone or computer calendar.</p><div class="cal-date" id="calendarSheetDate"></div><div class="cal-actions"><button class="cal-primary" id="calAppleBtn" type="button">Apple / iPhone Calendar</button><a id="calGoogleBtn" href="#" rel="noopener" target="_blank">Google Calendar</a><a id="calOutlookBtn" href="#" rel="noopener" target="_blank">Outlook Calendar</a><button id="calDownloadBtn" type="button">Download .ics (all devices)</button></div><button class="cal-close" id="calendarSheetClose" type="button">Close</button></div></div>
@@ -1142,5 +1142,5 @@ form.addEventListener('submit',async event=>{
 });
 window.addEventListener('pagehide',()=>store.stop(),{once:true});
 </script>
-<script src="/live-bridge.js?v=20261124-center-v3"></script><script src="/site-editor.js?v=20261124-center-v3"></script>
+<script src="/live-bridge.js?v=20261124-brand-v2"></script><script src="/site-editor.js?v=20261124-brand-v2"></script>
 </body></html>

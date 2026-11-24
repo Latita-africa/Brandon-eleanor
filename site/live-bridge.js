@@ -116,9 +116,29 @@
         if (typeof window.renderMoodPhotos === 'function') window.renderMoodPhotos();
       }
       document.dispatchEvent(new CustomEvent('live-config-loaded', { detail: safe }));
+      ensureHeroCenterCss();
     } catch (error) {
       console.warn('Could not apply live config', error);
     }
+  }
+
+  function ensureHeroCenterCss() {
+    const css = [
+      'html body #home .hero-content{display:flex!important;flex-direction:column!important;align-items:center!important;text-align:center!important;margin-left:auto!important;margin-right:auto!important}',
+      'html body #home #heroMonogram,html body #home .hero-monogram{display:flex!important;margin:0 auto!important;transform:none!important;position:relative!important;left:auto!important;top:auto!important;font-size:clamp(12px,1.45vw,15px)!important}',
+      'html body #home #heroEyebrow,html body #home .hero-eyebrow{display:block!important;width:100%!important;max-width:min(44rem,94vw)!important;margin:14px auto 22px!important;text-align:center!important;transform:none!important;font-size:clamp(20px,2.6vw,28px)!important;letter-spacing:.28em!important}',
+      'html body #home #heroNames,html body #home h1#heroNames{display:flex!important;flex-direction:column!important;align-items:center!important;text-align:center!important;transform:none!important;margin-left:auto!important;margin-right:auto!important}',
+      'html body #home #heroFirst,html body #home #heroSecond,html body #home #heroAmp,html body #home #heroDate{display:block!important;margin-left:auto!important;margin-right:auto!important;text-align:center!important;transform:none!important;position:relative!important;left:auto!important;top:auto!important}',
+      'html body #home #heroButton,html body #home .hero-content .btn{display:inline-flex!important;margin-left:auto!important;margin-right:auto!important;transform:none!important;position:relative!important;left:auto!important;top:auto!important}'
+    ].join('');
+    let style = document.getElementById('be-hero-center-fix');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'be-hero-center-fix';
+    }
+    // Keep this after studio styles so transform:none wins.
+    document.body.appendChild(style);
+    if (style.textContent !== css) style.textContent = css;
   }
 
   window.WeddingLive = {

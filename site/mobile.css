@@ -10,7 +10,7 @@
     justify-content: space-between;
   }
   .brand {
-    font-size: 24px !important;
+    font-size: 26px !important;
     letter-spacing: .06em;
     writing-mode: horizontal-tb !important;
     transform: none !important;
@@ -121,7 +121,7 @@
   .section { padding: 72px 20px; }
   .header { height: 64px; padding: 0 14px; }
   .nav { top: 64px; }
-  .brand { font-size: 22px !important; }
+  .brand { font-size: 24px !important; }
 
   .hero {
     height: 100svh;
@@ -163,7 +163,7 @@ body.be-preview-mobile .header {
   max-width: 100% !important;
 }
 body.be-preview-mobile .brand {
-  font-size: 22px !important;
+  font-size: 24px !important;
   writing-mode: horizontal-tb !important;
 }
 body.be-preview-mobile .mobile-toggle {
