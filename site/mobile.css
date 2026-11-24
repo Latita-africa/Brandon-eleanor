@@ -70,10 +70,14 @@
   .hero-monogram { font-size: 20px; gap: 12px; }
   .hero-monogram:before,
   .hero-monogram:after { width: 22px; }
-  .hero-eyebrow {
-    font-size: 10px !important;
-    letter-spacing: .28em !important;
-    max-width: 100%;
+  .hero-eyebrow,
+  #heroEyebrow {
+    font-size: 20px !important;
+    letter-spacing: .22em !important;
+    max-width: min(94vw, 34rem);
+    margin-left: auto !important;
+    margin-right: auto !important;
+    text-align: center !important;
   }
   .hero h1,
   #heroNames {
@@ -129,7 +133,8 @@
     font-size: clamp(44px, 14vw, 64px) !important;
     line-height: .94 !important;
   }
-  .hero-eyebrow { font-size: 9px !important; letter-spacing: .22em !important; }
+  .hero-eyebrow,
+  #heroEyebrow { font-size: 18px !important; letter-spacing: .2em !important; text-align: center !important; }
   .hero-date {
     font-size: 10px !important;
     letter-spacing: .12em !important;
@@ -217,9 +222,11 @@ body.be-studio-open.be-preview-mobile .hero-footer {
   opacity: 0.95;
 }
 body.be-preview-mobile .hero-monogram { font-size: 18px; }
-body.be-preview-mobile .hero-eyebrow {
-  font-size: 9px !important;
+body.be-preview-mobile .hero-eyebrow,
+body.be-preview-mobile #heroEyebrow {
+  font-size: 18px !important;
   letter-spacing: .2em !important;
+  text-align: center !important;
 }
 body.be-preview-mobile .hero h1,
 body.be-preview-mobile #heroNames {

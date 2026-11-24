@@ -1253,6 +1253,22 @@
       if (index['#brand'] && /save the date/i.test(String(index['#brand'].text || ''))) {
         delete index['#brand'].text;
       }
+      // Kill old drag offsets that shove the hero stack off-center.
+      const centeredKeys = ['#heroMonogram', '#heroEyebrow', '#heroNames', '#heroFirst', '#heroSecond', '#heroAmp', '#heroDate', '#heroButton'];
+      for (const key of centeredKeys) {
+        const rec = index[key];
+        if (!rec || typeof rec !== 'object') continue;
+        for (const scope of ['desktop', 'mobile', 'tablet']) {
+          const styles = rec[scope];
+          if (!styles || typeof styles !== 'object') continue;
+          if (typeof styles.transform === 'string' && /translate\(/i.test(styles.transform)) {
+            styles.transform = 'none';
+          }
+          if (key === '#heroEyebrow' || key === '#heroDate' || key === '#heroNames' || key === '#heroFirst' || key === '#heroSecond' || key === '#heroAmp') {
+            styles['text-align'] = 'center';
+          }
+        }
+      }
     }
     return cfg;
   }
