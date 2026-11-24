@@ -32,7 +32,10 @@
 
   async function fetchLive() {
     try {
-      const res = await fetch('/api/content', { cache: 'no-store' });
+      const res = await fetch('/api/content?ts=' + Date.now(), {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' }
+      });
       if (!res.ok) return null;
       return await res.json();
     } catch {
@@ -51,7 +54,7 @@
       if (!looksComplete(local)) local = {};
 
       const isEdit = new URLSearchParams(location.search).get('edit') === '1' || location.hash === '#edit';
-      // Always keep embedded defaults underneath published content.
+      // Guests always use the live published config (not an old browser draft).
       const published = mergeDeep(defaults, live);
       const merged = isEdit ? mergeDeep(published, local) : published;
 
@@ -61,8 +64,12 @@
 
       if (typeof window.getInvitationEditorState === 'function') {
         const data = window.getInvitationEditorState();
-        // Merge onto existing data — never wipe keys that are missing from a sparse payload.
-        Object.assign(data, safe);
+        // For guests, replace name/copy fields from live so old localStorage cannot win.
+        if (!isEdit) {
+          for (const key of Object.keys(safe)) data[key] = safe[key];
+        } else {
+          Object.assign(data, safe);
+        }
         if (typeof window.apply === 'function') window.apply();
         if (typeof window.applyDesign === 'function') window.applyDesign();
         if (typeof window.applyBackgroundPhotos === 'function') window.applyBackgroundPhotos();
@@ -146,7 +153,8 @@
         throw new Error('Wrong password. Try again.');
       }
       if (!res.ok || !payload.ok) throw new Error(payload.error || 'Could not publish.');
-      return payload;
+      // Prefer server config (photos already turned into real URLs).
+      return { ...payload, config: payload.config || ready };
     },
     async resetBrowserToLive() {
       localStorage.removeItem(STORAGE_KEY);

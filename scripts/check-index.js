@@ -1,0 +1,10 @@
+const fs = require('fs');
+const p = 'site/index.html';
+const st = fs.statSync(p);
+console.log('sizeMB', (st.size / 1024 / 1024).toFixed(2));
+const h = fs.readFileSync(p, 'utf8');
+const lines = h.split(/\n/);
+console.log('lines', lines.length);
+console.log(lines.map((l, i) => ({ i: i + 1, len: l.length })).sort((a, b) => b.len - a.len).slice(0, 5));
+console.log('brand markup', (h.match(/id="brand"[^>]*>[\s\S]{0,40}/) || [])[0]);
+console.log('heroMonogram markup', (h.match(/id="heroMonogram"[^>]*>[\s\S]{0,40}/) || [])[0]);
