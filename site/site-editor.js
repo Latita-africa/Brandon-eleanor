@@ -194,6 +194,7 @@
   if (!state.designTheme || typeof state.designTheme !== 'object') state.designTheme = {};
   if (!state.visualTheme || typeof state.visualTheme !== 'object') state.visualTheme = {...state.designTheme};
   if (!Array.isArray(state.rsvpGuests)) state.rsvpGuests = [];
+  sanitizeHeroLabels(state);
 
   let target = null, targetKey = '', picking = false, activeTab = 'words', activeScope = 'desktop';
   let panel, outline, hoverOutline, sizeHandle, moveHandle, contentRoot, undo = [], redo = [], noteTimer = 0;
@@ -519,7 +520,11 @@
     for (const [key, rec] of Object.entries(recordMap())) {
       const el = resolve(key); if (!el) continue;
       if (typeof rec.text === 'string' && (isTextSafe(el) || el.matches?.('#heroAmp,.amp,#heroFirst,#heroSecond,#heroMonogram,#heroDate'))) {
-        const normalized = String(rec.text).replace(/\r\n/g, '\n');
+        let normalized = String(rec.text).replace(/\r\n/g, '\n');
+        // Never let old overrides put initials on the calendar button or SAVE THE DATE on the nav brand.
+        if (el.id === 'heroMonogram' && /^[A-Z]\s*&\s*[A-Z]$/i.test(normalized.trim())) normalized = 'SAVE THE DATE';
+        if (el.id === 'brand' || el.dataset?.edit === 'brandLabel') continue;
+        if (el.id === 'heroEyebrow' && /^[A-Z]\s*&\s*[A-Z]$/i.test(normalized.trim())) continue;
         if ((el.innerText || el.textContent || '').replace(/\r\n/g, '\n') !== normalized) {
           el.textContent = normalized;
         }
@@ -1228,6 +1233,29 @@
     }
   }
 
+  function sanitizeHeroLabels(cfg) {
+    if (!cfg || typeof cfg !== 'object') return cfg;
+    delete cfg.brandLabel;
+    if (!cfg.heroMonogram || /^[A-Z]\s*&\s*[A-Z]$/i.test(String(cfg.heroMonogram).trim())) {
+      cfg.heroMonogram = 'SAVE THE DATE';
+    }
+    if (cfg.heroEyebrow && /^[A-Z]\s*&\s*[A-Z]$/i.test(String(cfg.heroEyebrow).trim())) {
+      cfg.heroEyebrow = "We're getting married!";
+    }
+    const index = cfg.visualOverrides && cfg.visualOverrides.index;
+    if (index && typeof index === 'object') {
+      // Old drag-editor selector forced "B & E" onto the hero eyebrow div.
+      delete index['[data-be-section="s01"] > div:nth-of-type(2) > div:nth-of-type(1)'];
+      if (index['#heroMonogram'] && index['#heroMonogram'].text && /^[A-Z]\s*&\s*[A-Z]$/i.test(String(index['#heroMonogram'].text).trim())) {
+        delete index['#heroMonogram'].text;
+      }
+      if (index['#brand'] && /save the date/i.test(String(index['#brand'].text || ''))) {
+        delete index['#brand'].text;
+      }
+    }
+    return cfg;
+  }
+
   function guestList() {
     if (!Array.isArray(state.rsvpGuests)) state.rsvpGuests = [];
     return state.rsvpGuests;
@@ -1557,6 +1585,7 @@
     data.styleOverrides = config.styleOverrides || {};
     data.backgroundPhotos = config.backgroundPhotos || {};
     data.rsvpGuests = Array.isArray(config.rsvpGuests) ? config.rsvpGuests : (data.rsvpGuests || []);
+    sanitizeHeroLabels(data);
 
     state = data;
     if (!state.visualOverrides) state.visualOverrides = {};
