@@ -520,6 +520,7 @@
     for (const [key, rec] of Object.entries(recordMap())) {
       const el = resolve(key); if (!el) continue;
       if (typeof rec.text === 'string' && (isTextSafe(el) || el.matches?.('#heroAmp,.amp,#heroFirst,#heroSecond,#heroMonogram,#heroDate'))) {
+
         let normalized = String(rec.text).replace(/\r\n/g, '\n');
         // Never let old overrides put initials on the calendar button or SAVE THE DATE on the nav brand.
         if (el.id === 'heroMonogram' && /^[A-Z]\s*&\s*[A-Z]$/i.test(normalized.trim())) normalized = 'SAVE THE DATE';
@@ -1585,6 +1586,7 @@
     data.styleOverrides = config.styleOverrides || {};
     data.backgroundPhotos = config.backgroundPhotos || {};
     data.rsvpGuests = Array.isArray(config.rsvpGuests) ? config.rsvpGuests : (data.rsvpGuests || []);
+
     sanitizeHeroLabels(data);
 
     state = data;
