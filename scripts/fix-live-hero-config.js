@@ -1,5 +1,5 @@
 /**
- * Pull live Blob config, fix SAVE THE DATE / B&E mixups, write local + publish back.
+ * Pull live Blob config, center the hero stack, restore eyebrow size, publish back.
  */
 const fs = require('fs');
 const path = require('path');
@@ -53,51 +53,113 @@ function loadEnvPassword() {
   }
 }
 
+function clearDrag(styles, extras = {}) {
+  const next = { ...(styles || {}), ...extras };
+  delete next.top;
+  delete next.left;
+  delete next.right;
+  delete next.bottom;
+  next.transform = 'none';
+  next['text-align'] = 'center';
+  return next;
+}
+
 function cleanConfig(cfg) {
   const out = { ...cfg };
   delete out.brandLabel;
   out.heroMonogram = 'SAVE THE DATE';
+  out.heroEyebrow = "WE'RE GETTING MARRIED";
 
-  // Keep a normal invitation eyebrow — never force initials here.
-  if (!out.heroEyebrow || /^[A-Z]\s*&\s*[A-Z]$/i.test(String(out.heroEyebrow).trim()) || /B\s*&\s*E/i.test(String(out.heroEyebrow))) {
-    out.heroEyebrow = "We're getting married!";
+  out.styleOverrides = { ...(out.styleOverrides || {}) };
+  out.styleOverrides['edit:heroEyebrow'] = {
+    ...(out.styleOverrides['edit:heroEyebrow'] || {}),
+    fontSize: '28',
+    fontFamily: 'Cormorant Garamond, Georgia, serif'
+  };
+
+  const index = { ...((out.visualOverrides && out.visualOverrides.index) || {}) };
+
+  // Old selector forced "B & E" / 38px type onto the eyebrow.
+  delete index['[data-be-section="s01"] > div:nth-of-type(2) > div:nth-of-type(1)'];
+
+  const centered = {
+    '#heroMonogram': {
+      desktop: clearDrag(index['#heroMonogram']?.desktop, { display: 'flex' }),
+      mobile: clearDrag(index['#heroMonogram']?.mobile, { display: 'flex' }),
+      tablet: {}
+    },
+    '#heroEyebrow': {
+      desktop: clearDrag(index['#heroEyebrow']?.desktop, {
+        display: 'block',
+        'font-size': '28',
+        'letter-spacing': '0.28em'
+      }),
+      mobile: clearDrag(index['#heroEyebrow']?.mobile, {
+        display: 'block',
+        'font-size': '20',
+        'letter-spacing': '0.22em'
+      }),
+      tablet: {}
+    },
+    '#heroNames': {
+      desktop: clearDrag(index['#heroNames']?.desktop, { display: 'flex' }),
+      mobile: clearDrag(index['#heroNames']?.mobile, { display: 'flex' }),
+      tablet: {}
+    },
+    '#heroFirst': {
+      desktop: clearDrag(index['#heroFirst']?.desktop, {
+        display: 'block',
+        'font-family': '"Pinyon Script", Georgia, serif',
+        'letter-spacing': '1.7'
+      }),
+      mobile: clearDrag(index['#heroFirst']?.mobile, { display: 'block' }),
+      tablet: {},
+      text: 'Brandon'
+    },
+    '#heroSecond': {
+      desktop: clearDrag(index['#heroSecond']?.desktop, {
+        display: 'block',
+        'font-family': '"Pinyon Script", Georgia, serif',
+        'letter-spacing': '1.7'
+      }),
+      mobile: clearDrag(index['#heroSecond']?.mobile, { display: 'block' }),
+      tablet: {},
+      text: 'Eleanor'
+    },
+    '#heroAmp': {
+      desktop: clearDrag(index['#heroAmp']?.desktop, { display: 'block' }),
+      mobile: clearDrag(index['#heroAmp']?.mobile, { display: 'block' }),
+      tablet: {}
+    },
+    '#heroDate': {
+      desktop: clearDrag(index['#heroDate']?.desktop, { display: 'block', 'font-size': '20' }),
+      mobile: clearDrag(index['#heroDate']?.mobile, { display: 'block', 'font-size': '16' }),
+      tablet: {}
+    },
+    '#heroButton': {
+      desktop: clearDrag(index['#heroButton']?.desktop, { display: 'inline-flex', 'font-size': '14' }),
+      mobile: clearDrag(index['#heroButton']?.mobile, { display: 'inline-flex', 'font-size': '14' }),
+      tablet: {}
+    }
+  };
+
+  // Drop blown-up monogram font sizes from old drags.
+  for (const scope of ['desktop', 'mobile']) {
+    if (centered['#heroMonogram'][scope]['font-size'] && Number(centered['#heroMonogram'][scope]['font-size']) > 18) {
+      delete centered['#heroMonogram'][scope]['font-size'];
+    }
+  }
+  delete centered['#heroMonogram'].text;
+
+  Object.assign(index, centered);
+
+  if (index['#brand']) {
+    const brand = { ...index['#brand'] };
+    delete brand.text;
+    index['#brand'] = brand;
   }
 
-  if (out.visualOverrides && out.visualOverrides.index) {
-    const index = { ...out.visualOverrides.index };
-
-    // Old selector forced "B & E" onto the first div in hero-content (now the eyebrow).
-    delete index['[data-be-section="s01"] > div:nth-of-type(2) > div:nth-of-type(1)'];
-
-    // Reset extreme monogram drag/offset so SAVE THE DATE sits in place.
-    if (index['#heroMonogram']) {
-      const mono = { ...index['#heroMonogram'] };
-      for (const scope of ['desktop', 'mobile', 'tablet']) {
-        if (!mono[scope]) continue;
-        const next = { ...mono[scope] };
-        delete next.transform;
-        delete next.top;
-        delete next.left;
-        delete next.right;
-        delete next.bottom;
-        // Keep readable button size, drop the blown-up 38px drag size.
-        if (next['font-size'] && Number(next['font-size']) > 20) delete next['font-size'];
-        mono[scope] = next;
-      }
-      delete mono.text;
-      index['#heroMonogram'] = mono;
-    }
-
-    // Brand should stay initials, not SAVE THE DATE text override.
-    if (index['#brand']) {
-      const brand = { ...index['#brand'] };
-      delete brand.text;
-      index['#brand'] = brand;
-    }
-
-    out.visualOverrides = { ...out.visualOverrides, index };
-  }
-
+  out.visualOverrides = { ...(out.visualOverrides || {}), index };
   out.updatedAt = new Date().toISOString();
   return out;
 }
@@ -111,19 +173,21 @@ function cleanConfig(cfg) {
   fs.writeFileSync(LOCAL, JSON.stringify(cleaned, null, 2));
   console.log('Wrote cleaned config to data/live-config.json');
   console.log('heroMonogram =', cleaned.heroMonogram);
-  console.log('brandLabel removed =', !('brandLabel' in cleaned));
   console.log('heroEyebrow =', cleaned.heroEyebrow);
+  console.log('mono transform =', cleaned.visualOverrides.index['#heroMonogram'].desktop.transform);
+  console.log('first transform =', cleaned.visualOverrides.index['#heroFirst'].desktop.transform);
+  console.log('eyebrow size =', cleaned.visualOverrides.index['#heroEyebrow'].desktop['font-size']);
 
   const password = loadEnvPassword();
   if (!password) {
-    console.log('No EDITOR_PASSWORD in .env — skipped live publish. Open ?edit=1 and Save to website after deploy.');
+    console.log('No EDITOR_PASSWORD in .env — skipped live publish.');
     return;
   }
 
   const result = await postJson(LIVE + '/api/content', cleaned, {
     'X-Editor-Password': password
   });
-  console.log('Publish status', result.status, result.data.slice(0, 300));
+  console.log('Publish status', result.status, result.data.slice(0, 400));
   if (result.status >= 400) process.exitCode = 1;
 })().catch(err => {
   console.error(err);

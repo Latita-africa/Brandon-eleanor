@@ -1241,11 +1241,16 @@
       cfg.heroMonogram = 'SAVE THE DATE';
     }
     if (cfg.heroEyebrow && /^[A-Z]\s*&\s*[A-Z]$/i.test(String(cfg.heroEyebrow).trim())) {
-      cfg.heroEyebrow = "We're getting married!";
+      cfg.heroEyebrow = "WE'RE GETTING MARRIED";
+    }
+    if (cfg.styleOverrides && typeof cfg.styleOverrides === 'object') {
+      const eye = cfg.styleOverrides['edit:heroEyebrow'] || (cfg.styleOverrides['edit:heroEyebrow'] = {});
+      if (!eye.fontSize || Number(eye.fontSize) < 22) eye.fontSize = '28';
+      if (!eye.fontFamily) eye.fontFamily = 'Cormorant Garamond, Georgia, serif';
     }
     const index = cfg.visualOverrides && cfg.visualOverrides.index;
     if (index && typeof index === 'object') {
-      // Old drag-editor selector forced "B & E" onto the hero eyebrow div.
+      // Old selector forced "B & E" / huge type onto the first hero-content div (eyebrow).
       delete index['[data-be-section="s01"] > div:nth-of-type(2) > div:nth-of-type(1)'];
       if (index['#heroMonogram'] && index['#heroMonogram'].text && /^[A-Z]\s*&\s*[A-Z]$/i.test(String(index['#heroMonogram'].text).trim())) {
         delete index['#heroMonogram'].text;
@@ -1261,12 +1266,51 @@
         for (const scope of ['desktop', 'mobile', 'tablet']) {
           const styles = rec[scope];
           if (!styles || typeof styles !== 'object') continue;
-          if (typeof styles.transform === 'string' && /translate\(/i.test(styles.transform)) {
+          delete styles.top;
+          delete styles.left;
+          delete styles.right;
+          delete styles.bottom;
+          if (typeof styles.transform === 'string' && styles.transform !== 'none') {
             styles.transform = 'none';
           }
-          if (key === '#heroEyebrow' || key === '#heroDate' || key === '#heroNames' || key === '#heroFirst' || key === '#heroSecond' || key === '#heroAmp') {
-            styles['text-align'] = 'center';
+          styles['text-align'] = 'center';
+          if (key === '#heroMonogram') {
+            styles.display = 'flex';
+            if (styles['font-size'] && Number(styles['font-size']) > 18) delete styles['font-size'];
+          } else if (key === '#heroEyebrow') {
+            styles.display = 'block';
+            styles['font-size'] = scope === 'mobile' ? '20' : '28';
+            styles['letter-spacing'] = scope === 'mobile' ? '0.22em' : '0.28em';
+          } else if (key === '#heroNames') {
+            styles.display = 'flex';
+          } else if (key === '#heroFirst' || key === '#heroSecond' || key === '#heroAmp' || key === '#heroDate') {
+            styles.display = 'block';
+          } else if (key === '#heroButton') {
+            styles.display = 'inline-flex';
           }
+        }
+      }
+      // Ensure eyebrow + monogram records exist with centered defaults.
+      index['#heroEyebrow'] = index['#heroEyebrow'] || { desktop: {}, mobile: {}, tablet: {} };
+      index['#heroMonogram'] = index['#heroMonogram'] || { desktop: {}, mobile: {}, tablet: {} };
+      for (const scope of ['desktop', 'mobile']) {
+        index['#heroEyebrow'][scope] = {
+          ...(index['#heroEyebrow'][scope] || {}),
+          display: 'block',
+          position: 'relative',
+          transform: 'none',
+          'text-align': 'center',
+          'font-size': scope === 'mobile' ? '20' : '28',
+          'letter-spacing': scope === 'mobile' ? '0.22em' : '0.28em'
+        };
+        index['#heroMonogram'][scope] = {
+          ...(index['#heroMonogram'][scope] || {}),
+          display: 'flex',
+          position: 'relative',
+          transform: 'none'
+        };
+        if (index['#heroMonogram'][scope]['font-size'] && Number(index['#heroMonogram'][scope]['font-size']) > 18) {
+          delete index['#heroMonogram'][scope]['font-size'];
         }
       }
     }
@@ -1989,6 +2033,8 @@
     if (!state.visualTypographyScopes) state.visualTypographyScopes = {};
     if (!state.designTheme) state.designTheme = {};
     if (!state.visualTheme) state.visualTheme = {...state.designTheme};
+    sanitizeHeroLabels(state);
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* ignore */ }
     refreshVisual();
   });
 

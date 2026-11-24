@@ -43,6 +43,45 @@
     }
   }
 
+  function sanitizeHeroCenter(cfg) {
+    if (!cfg || typeof cfg !== 'object') return cfg;
+    delete cfg.brandLabel;
+    if (!cfg.heroMonogram || /^[A-Z]\s*&\s*[A-Z]$/i.test(String(cfg.heroMonogram).trim())) {
+      cfg.heroMonogram = 'SAVE THE DATE';
+    }
+    if (cfg.heroEyebrow && /^[A-Z]\s*&\s*[A-Z]$/i.test(String(cfg.heroEyebrow).trim())) {
+      cfg.heroEyebrow = "WE'RE GETTING MARRIED";
+    }
+    const index = cfg.visualOverrides && cfg.visualOverrides.index;
+    if (!index || typeof index !== 'object') return cfg;
+    delete index['[data-be-section="s01"] > div:nth-of-type(2) > div:nth-of-type(1)'];
+    const keys = ['#heroMonogram', '#heroEyebrow', '#heroNames', '#heroFirst', '#heroSecond', '#heroAmp', '#heroDate', '#heroButton'];
+    for (const key of keys) {
+      const rec = index[key];
+      if (!rec || typeof rec !== 'object') continue;
+      for (const scope of ['desktop', 'mobile', 'tablet']) {
+        const styles = rec[scope];
+        if (!styles || typeof styles !== 'object') continue;
+        delete styles.top;
+        delete styles.left;
+        delete styles.right;
+        delete styles.bottom;
+        if (styles.transform && styles.transform !== 'none') styles.transform = 'none';
+        styles['text-align'] = 'center';
+        if (key === '#heroMonogram') {
+          styles.display = 'flex';
+          if (styles['font-size'] && Number(styles['font-size']) > 18) delete styles['font-size'];
+        }
+        if (key === '#heroEyebrow') {
+          styles.display = 'block';
+          styles['font-size'] = scope === 'mobile' ? '20' : '28';
+          styles['letter-spacing'] = scope === 'mobile' ? '0.22em' : '0.28em';
+        }
+      }
+    }
+    return cfg;
+  }
+
   function applyToInvitation(live) {
     if (!live || typeof live !== 'object') return;
     try {
@@ -59,7 +98,7 @@
       const merged = isEdit ? mergeDeep(published, local) : published;
 
       // If the merge is still incomplete, fall back to defaults.
-      const safe = looksComplete(merged) ? merged : defaults;
+      const safe = sanitizeHeroCenter(looksComplete(merged) ? merged : defaults);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(safe));
 
       if (typeof window.getInvitationEditorState === 'function') {
