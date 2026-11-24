@@ -1063,7 +1063,7 @@
       return;
     }
     if (!confirm('Delete this picture from the website?')) return;
-    history();
+        history();
     const rec = editingRecord(targetKey);
     const photoKey = invitationPhotoKey(target);
 
@@ -1111,7 +1111,7 @@
           const file = input.files?.[0]; if (!file) return;
           try {
             const image = await compressPhoto(file);
-            history();
+          history();
             target.hidden = false;
             setValue(targetKey, 'src', image);
             const photoKey = invitationPhotoKey(target);
@@ -1952,6 +1952,6 @@
     // Ask for password before opening the editor panel.
     if (new URLSearchParams(location.search).get('edit') === '1') {
       requestAnimationFrame(() => { openStudio(); });
-    }
+  }
   }
 })();
