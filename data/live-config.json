@@ -356,17 +356,6 @@
 
                                                                                                    }
                                                                                     },
-                                          "[data-edit=\"navDetails\"]":  {
-                                                                             "desktop":  {
-
-                                                                                         },
-                                                                             "mobile":  {
-
-                                                                                        },
-                                                                             "tablet":  {
-
-                                                                                        }
-                                                                         },
                                           "#mobileToggle":  {
                                                                 "desktop":  {
 
@@ -448,17 +437,6 @@
 
                                                                                        }
                                                                         },
-                                          "[data-edit=\"navStory\"]":  {
-                                                                           "desktop":  {
-                                                                                           "background-image":  "url(\"https://tiwhnbgsucfxq27g.public.blob.vercel-storage.com/wedding/uploads/live-visualOverrides-index--data-edit-na-1795166131155-196feb67.webp\")"
-                                                                                       },
-                                                                           "mobile":  {
-
-                                                                                      },
-                                                                           "tablet":  {
-
-                                                                                      }
-                                                                       },
                                           "#nav":  {
                                                        "desktop":  {
 
@@ -1155,17 +1133,6 @@
 
                                                                                         }
                                                                          },
-                                          "[data-edit=\"navProgramme\"]":  {
-                                                                               "desktop":  {
-
-                                                                                           },
-                                                                               "mobile":  {
-
-                                                                                          },
-                                                                               "tablet":  {
-
-                                                                                          }
-                                                                           },
                                           "[data-edit=\"rsvpFormEyebrow\"]":  {
                                                                                   "desktop":  {
 
@@ -1398,7 +1365,127 @@
                                                                             "tablet":  {
 
                                                                                        }
-                                                                        }
+                                                                        },
+                                          "[data-edit=\"navStory\"]":  {
+                                                                           "desktop":  {
+                                                                                           "font-family":  "\"Libre Baskerville\", Georgia, serif",
+                                                                                           "font-size":  "10",
+                                                                                           "color":  "#f5eedf",
+                                                                                           "background-color":  "#000000",
+                                                                                           "background-image":  "none",
+                                                                                           "padding":  "1px 3px",
+                                                                                           "border":  "0",
+                                                                                           "display":  "inline"
+                                                                                       },
+                                                                           "mobile":  {
+                                                                                          "font-family":  "\"Libre Baskerville\", Georgia, serif",
+                                                                                          "font-size":  "10",
+                                                                                          "color":  "#f5eedf",
+                                                                                          "background-color":  "#000000",
+                                                                                          "background-image":  "none",
+                                                                                          "padding":  "1px 3px",
+                                                                                          "border":  "0"
+                                                                                      },
+                                                                           "tablet":  {
+
+                                                                                      }
+                                                                       },
+                                          "[data-edit=\"navProgramme\"]":  {
+                                                                               "desktop":  {
+                                                                                               "font-family":  "\"Libre Baskerville\", Georgia, serif",
+                                                                                               "font-size":  "10",
+                                                                                               "color":  "#f5eedf",
+                                                                                               "background-color":  "#000000",
+                                                                                               "background-image":  "none",
+                                                                                               "padding":  "1px 3px",
+                                                                                               "border":  "0",
+                                                                                               "display":  "inline"
+                                                                                           },
+                                                                               "mobile":  {
+                                                                                              "font-family":  "\"Libre Baskerville\", Georgia, serif",
+                                                                                              "font-size":  "10",
+                                                                                              "color":  "#f5eedf",
+                                                                                              "background-color":  "#000000",
+                                                                                              "background-image":  "none",
+                                                                                              "padding":  "1px 3px",
+                                                                                              "border":  "0"
+                                                                                          },
+                                                                               "tablet":  {
+
+                                                                                          }
+                                                                           },
+                                          "[data-edit=\"navVenue\"]":  {
+                                                                           "desktop":  {
+                                                                                           "font-family":  "\"Libre Baskerville\", Georgia, serif",
+                                                                                           "font-size":  "10",
+                                                                                           "color":  "#f5eedf",
+                                                                                           "background-color":  "#000000",
+                                                                                           "background-image":  "none",
+                                                                                           "padding":  "1px 3px",
+                                                                                           "border":  "0",
+                                                                                           "display":  "inline"
+                                                                                       },
+                                                                           "mobile":  {
+                                                                                          "font-family":  "\"Libre Baskerville\", Georgia, serif",
+                                                                                          "font-size":  "10",
+                                                                                          "color":  "#f5eedf",
+                                                                                          "background-color":  "#000000",
+                                                                                          "background-image":  "none",
+                                                                                          "padding":  "1px 3px",
+                                                                                          "border":  "0"
+                                                                                      },
+                                                                           "tablet":  {
+
+                                                                                      }
+                                                                       },
+                                          "[data-edit=\"navDetails\"]":  {
+                                                                             "desktop":  {
+                                                                                             "font-family":  "\"Libre Baskerville\", Georgia, serif",
+                                                                                             "font-size":  "10",
+                                                                                             "color":  "#f5eedf",
+                                                                                             "background-color":  "#000000",
+                                                                                             "background-image":  "none",
+                                                                                             "padding":  "1px 3px",
+                                                                                             "border":  "0",
+                                                                                             "display":  "inline"
+                                                                                         },
+                                                                             "mobile":  {
+                                                                                            "font-family":  "\"Libre Baskerville\", Georgia, serif",
+                                                                                            "font-size":  "10",
+                                                                                            "color":  "#f5eedf",
+                                                                                            "background-color":  "#000000",
+                                                                                            "background-image":  "none",
+                                                                                            "padding":  "1px 3px",
+                                                                                            "border":  "0"
+                                                                                        },
+                                                                             "tablet":  {
+
+                                                                                        }
+                                                                         },
+                                          "[data-edit=\"navRSVP\"]":  {
+                                                                          "desktop":  {
+                                                                                          "font-family":  "\"Libre Baskerville\", Georgia, serif",
+                                                                                          "font-size":  "10",
+                                                                                          "color":  "#f5eedf",
+                                                                                          "background-color":  "#000000",
+                                                                                          "background-image":  "none",
+                                                                                          "padding":  "1px 3px",
+                                                                                          "border":  "0",
+                                                                                          "display":  "inline"
+                                                                                      },
+                                                                          "mobile":  {
+                                                                                         "font-family":  "\"Libre Baskerville\", Georgia, serif",
+                                                                                         "font-size":  "10",
+                                                                                         "color":  "#f5eedf",
+                                                                                         "background-color":  "#000000",
+                                                                                         "background-image":  "none",
+                                                                                         "padding":  "1px 3px",
+                                                                                         "border":  "0"
+                                                                                     },
+                                                                          "tablet":  {
+
+                                                                                     }
+                                                                      }
                                       }
                         },
     "visualOrder":  {
